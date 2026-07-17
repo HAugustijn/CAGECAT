@@ -4,3 +4,11 @@ cagecat_web/tests
 cagecat_web/cagecat_web/dumps
 cagecat_web/.pre-commit-config.yaml
 .idea/
+
+# Local job working directories (transient results)
+cagecat_web/cagecat_web/upload
+
+# Never bake local secrets/config into an image
+.env
+.env.*
+!.env.example
