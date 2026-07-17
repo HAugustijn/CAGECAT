@@ -1,0 +1,33 @@
+{% block footer %}
+<footer class="container-fluid bs-tertiary-bg text-muted py-3 border-top">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="d-flex flex-column h-100 text-center">
+        <div class="mt-auto px-5">
+
+          <div class="d-flex justify-content-center align-items-center mb-2">
+            <img src="{{ url_for('static', path='images/cagecat_logo.png') }}"
+                 alt="Logo"
+                 width="60"
+                 height="60"
+                 class="me-2"
+                 style="object-fit: contain;">
+            <h6 class="text-uppercase fs-5 mb-0 align-self-center">CAGECAT</h6>
+          </div>
+
+          <p class="mb-1">Currently version {{ cagecat_version }}. Code licensed under the
+            <a rel="license" href="https://opensource.org/license/mit/" class="custom-link" target="_blank">MIT license.</a>
+          </p>
+          <p class="mb-1">Designed by the
+            <a rel="team" href="{{ url_for('contact') }}" aria-label="team">CAGECAT</a> team.
+          </p>
+          <p class="mb-1">If you have found this software useful, please
+            <a rel="cite" href="https://doi.org/10.1186/s12859-023-05311-2" class="custom-link" target="_blank">cite</a> us.
+          </p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}

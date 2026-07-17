@@ -1,0 +1,58 @@
+{% block header%}
+<header class="navbar sticky-top navbar-expand-lg navbar-custom" data-bs-theme="light">
+  <div class="container-xxl navbar-font px-3 px-md-4 px-xl-5">
+
+    <!-- Logo -->
+    <a class="navbar-brand p-0 me-2" href="{{ url_for('home') }}" aria-label="CAGECAT">
+      <img src="{{ url_for('static', path='images/cagecat_logo_white.png') }}" alt="Logo" width="42" height="40">
+    </a>
+
+    <!-- Small screen toggler (phone mode) -->
+    <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown"
+      aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Collapsing navigation -->
+    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
+        <li class="nav-item">
+          <a id="nav-home" class="nav-link ms-lg-3" href="{{ url_for('home') }}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a id="nav-about" class="nav-link ms-lg-3" href="{{ url_for('about') }}">About</a>
+        </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle ms-lg-3" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Tools
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('cblaster') }}">cBlaster</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('clinker') }}">cLinker</a></li>
+          </ul>
+        </li>
+        <li class="nav-item">
+          <a id="nav-docs" class="nav-link ms-lg-3" href="{{ url_for('documentation') }}">Docs</a>
+        </li>
+        <li class="nav-item">
+          <a id="nav-contact" class="nav-link ms-lg-3" href="{{ url_for('contact') }}">Contact</a>
+        </li>
+      </ul>
+
+      <!-- Theme toggle button -->
+      <div class="d-flex align-items-center ms-lg-3">
+        <button class="btn" id="theme-toggle" aria-label="Toggle theme" data-bs-toggle="tooltip"
+          data-bs-placement="bottom" title="Toggle light/dark theme">
+          <i class="bi bi-sun theme-icon" id="theme-icon"></i>
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</header>
+
+
+
+{% endblock %}

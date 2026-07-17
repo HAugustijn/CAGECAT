@@ -1,5 +1,0 @@
-# make sure all sh scripts have rights to be executed (chmod +x <filename>)
-# minute hour day_of_month month day_of_week command
-
-9 0 * * * cd /repo/maintenance && /miniconda3/bin/python /repo/maintenance/maint_remove_old_jobs.py >/process_logs/maintenance/$(date +"\%Y\%m\%d")_job_removal.log 2>&1
-10 0 * * */7 /repo/maintenance/maint_backup.sh > /process_logs/maintenance/$(date +"\%Y\%m\%d")_backup.log 2>&1

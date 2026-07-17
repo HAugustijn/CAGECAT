@@ -1,0 +1,483 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="row">
+  <!-- Main content -->
+  <div class="col-lg-9 px-4 border-end">
+    <div class="d-flex flex-column h-100">
+      <div class="mt-auto">
+        <h2 id="get-started" class="fs-4 mt-4 mb-3 page-title-small fs-5">Get started with CAGECAT</h2>
+        <p>CAGECAT is a toolbox for comparative analysis and visualization of gene clusters. On this page, you'll find
+            more information about the tools currently included in the CAGECAT framework, along with a tutorial to help
+            you get started.</p>
+
+        <h2 id="tools" class="scroll-offset fs-4 mt-5 mb-2 page-title-small">Tools</h2>
+        <p>
+            Here you'll find an overview of the tools currently implemented in CAGECAT. The framework is designed to be
+            expandable, making it easy to add new tools in the future. Missing a feature? Or have a tool you think would
+            be a great fit? We'd love to hear from you—feel free to get in touch!</p>
+        <p>
+            Prefer to run the tools locally instead of using the CAGECAT web interface? You can find the source code on
+            the respective <i class="bi bi-github"></i> GitHub pages. For more detailed documentation, check out the
+            authors’ <i class="bi bi-book"></i> wiki pages.
+        </p>
+        <p>
+            If you found the tools helpful, please consider <i class="bi bi-quote"></i> citing them in your work.
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center mt-5 mb-2">
+          <h3 id="cblaster" class="scroll-offset mt-3 mb-2 page-title-smaller">cBlaster</h3>
+          <div class="btn-toolbar" role="toolbar" aria-label="cblaster links">
+            <div class="btn-group" role="group">
+              <a class="btn btn-outline-secondary" href="https://github.com/gamcil/cblaster" target="_blank"><i class="bi bi-github"></i></a>
+              <a class="btn btn-outline-secondary" href="https://cblaster.readthedocs.io/en/latest/" target="_blank"><i class="bi bi-book"></i></a>
+              <a class="btn btn-outline-secondary" href="https://doi.org/10.1093/bioadv/vbab016" target="_blank"><i class="bi bi-quote"></i></a>
+            </div>
+          </div>
+        </div>
+        <p>
+            Given a collection of protein sequences, cblaster can search sequence databases remotely via the NCBI BLAST API
+            or on our local servers via DIAMOND. Search results are parsed and filtered based on user thresholds for identity,
+            coverage and e-value. The genomic coordinates of remaining hits are obtained from the NCBI's Identical
+            Protein Group (IPG) database (or a local database in local searches). Finally, cblaster scans for instances
+            of collocation and generates visualisations.
+        </p>
+        <h4 id="search" class="scroll-offset page-title-smaller" style="font-size: 18px;">Search function</h4>
+        <h5 class="page-subtitle-small">Remote search mode</h5>
+        <p>
+            Input query sequences are searched against the NCBI’s BLAST API in remote mode. BLAST hits are filtered
+            according to user defined quality thresholds. Each hit is then queried against the NCBI’s Identical Protein
+            Groups (IPG) resource, which, as its name suggests, groups proteins sharing identical amino acid sequence
+            as an anti-redundancy measure. The resulting IPG table contains source genomic coordinates for each hit
+            protein sequence, which cblaster uses to group them by their corresponding organism, scaffold and subject
+            sequences.
+        </p>
+        <p>
+            In order to run a cblaster-search, you will need to provide input sequences which will be used as queries. These can be provided in two ways:
+        </p>
+        <ol>
+          <li>A FASTA format file containing amino acid or nucleotide sequences.</li>
+          <li>A list of valid NCBI GenPept sequence identifiers (e.g. accession, GI number). Identifiers referring to
+              nucleotide sequences are currently not supported.
+          </li>
+        </ol>
+        <h5 class="page-subtitle-small">HMM search mode</h5>
+        <p>
+            To run a domain search, you need to specify the search mode as HMM, provide query Pfam domain profile names
+            and select a genus-specific database (consisting of all representative/reference genomes of the selected
+            genus stored at NCBI) to search in. This will extract the specified domain profiles from the Pfam database
+            and search for the sequences in the selected genus database for any domain hits.
+        </p>
+        <h5 class="page-subtitle-small">Result filtering</h5>
+        <p>
+            The default values for each filter are pretty generous, and may need changing based on your data. The search
+            thresholds should be fairly self-explanatory; any hit not meeting them are discarded from the BLAST search results.
+            <br><br>
+            The clustering thresholds, however, are a bit more interesting. These determine what conditions a candidate
+            hit cluster must satisfy in order to be detected by cblaster. The most important parameter here is Maximum
+            Intergenic Gap, which determines how far (in base pairs) any two hits in a cluster can be from one another.
+            This parameter could vary wildly based on your data set. For example, in bacterial or fungal secondary
+            metabolite gene clusters where genes are typically found very close together, a low value could be used.
+            Conversely, plant clusters, which may involve a collection of key genes spread out over the entire chromosome,
+            would require a much higher value. The Gene Neighbourhood Estimation module can used to calibrate this parameter
+            based on your results
+        </p>
+        <h5 class="page-subtitle-small">Output</h5>
+        <p>
+            By default, a complete summary is generated and saved to a file after the search has finished. This reports
+            all clusters, as well as the scores and positions of each gene hit, found during the search, organized by
+            the organisms and genomic scaffolds they belong to.
+        </p>
+        <p>
+            An easier way to digest all of the information that cblaster will produce is by using the binary table
+            output. This generates a matrix which shows the absence/presence of query sequence (columns) hits in each
+            result cluster (rows). By default, the binary table will only report the total number of hits per query
+            sequence in each cluster. However, you can instead change this to some value calculated from the actual
+            scores of hits in the clusters.
+        </p>
+        <p>
+            This is controlled by two additional parameters: Hit attribute, which determines which score attribute
+            (‘identity’, ‘coverage’, ‘bitscore’ or ‘evalue’) to use when calculating cell values, and Key function,
+            which determines the function (‘len’, ‘max’, ‘sum’) applied to the score attribute.
+        </p>
+        <p>
+            Each cell in the matrix refers to multiple hit sequences within each cluster. For every cell, the chosen
+            score attribute is extracted from each hit corresponding to that cell. Then, the key function is applied
+            to the extracted scores. The ‘len’ function calculates the length of each score list - essentially just
+            counting the number of hits in that cell. The ‘max’ and ‘sum’ functions calculate the maximum and sum of
+            each score list, respectively.
+        </p>
+        <h5 class="page-subtitle-small">Saving session files</h5>
+        <p>
+            Given that searches can take a significant time to run (i.e. as long as any normal batch BLAST job will
+            take), cblaster is capable of saving a search session to file, and loading it back later for further
+            filtering and visualization. In CAGECAT, cblaster search sessions are used to connect jobs. Any subsequent
+            jobs will make cblaster try to load the session file of the precious job, instead of performing a new search.
+        </p>
+        <h5 class="page-subtitle-small">Finding intermediate genes between hits</h5>
+        <p>
+            The default output for cblaster is the cluster heatmap, which shows the absence or presence of your query
+            sequences. While we find this is generally the easiest way to pick up on patterns of cluster conservation,
+            we also like to be able to visualize our results in their own genomic contexts so we can see the differences
+            in gene order, orientation, size and so on.
+        </p>
+        <p>
+            For this reason, we added integration to the clinker tool, which can generate highly interactive gene
+            cluster comparison plots. However, in a regular cblaster-search, we do not have access to any information
+            about the genes between the BLAST hits shown in the heatmap. This means that if you were to run the
+            Visualize with query clusters module on a previous job, you would produce a figure where most of the
+            clusters are missing genes!
+        </p>
+        <p>
+            To get around this, you can use the Find intermediate genes parameter when performing a cblaster search.
+            After the search has completed, genomic regions corresponding to the detected gene clusters are retrieved
+            from the NCBI servers, and used to fill in the missing genes.
+        </p>
+        <h4 id="recompute" class="scroll-offset page-title-smaller" style="font-size: 18px;">Recompute analysis</h4>
+        <p>
+            You can recompute a previous cblaster-search job using new filter thresholds to filter previous results.
+        </p>
+        <h4 id="neighbourhood" class="scroll-offset page-title-smaller" style="font-size: 18px;">Gene Neighbourhood Estimation (GNE)</h4>
+        <p>
+            In cblaster, the most important parameter when detecting hit clusters is the maximum intergenic-hit gap
+            parameter. This determines how far cblaster will look between any two hits before terminating a given
+            cluster. By default, this parameter is set to 20,000 bp; if no new hit is found within 20,000 bp of the
+            previous hit in a cluster, cblaster will terminate extension of that cluster. Though the 20 kb cutoff has
+            worked quite well for us when looking at fungi or bacteria, where gene density within clusters is quite
+            high, it may not work for all datasets. For example, plant gene clusters may have key biosynthetic genes
+            spread out over large stretches of the chromosome, with many genes in between; this is where the GNE
+            module comes in.
+        </p>
+        <p>
+            The Neighbourhood estimation module lets you robustly detect an appropriate value to use for this parameter
+            by continually re-running cluster detection on a previous cblaster-search or cblaster-recompute job at
+            different gap values over some interval. It then generates plots of the mean and median cluster sizes (bp),
+            as well as the total number of predicted clusters, at each value.
+        </p>
+        <p>
+            The Neighbourhood estimation module generates a list of gap values (total number determined by the samples
+            parameter) from 0 to some upper limit (determined by the Max. intergenic distance parameter). These numbers
+            can be chosen in two ways. By default, Neighbourhood estimation will take evenly spaced (i.e. linear)
+            values over the range 0-100,000 bp. Alternatively, you can choose to generate these values via a log scale,
+            which will result in more samples at lower values than at higher ones. This can be specified using the
+            sampling space parameter. As these plots typically resemble logarithmic growth (i.e. rise steeply, then
+            level off), it can make sense to sample more heavily in the more unstable region of the curve.
+        </p>
+        <h4 id="extract" class="scroll-offset page-title-smaller" style="font-size: 18px;">Extract sequences</h4>
+        <p>
+            After a cblaster-search has been performed, it can be useful to retrieve sequences matching a certain
+            query for further analyses (e.g. sequence comparisons for phylogenies). This is easily accomplished using
+            the Extract sequences module.
+        </p>
+        <p>
+            A preceding job is used as input, and sequences matching any filters you have specified will be extracted.
+            If no filters are specified, ALL hit sequences will be extracted. By default, only sequence names are
+            extracted. This is because cblaster stores no actual sequence data for hit sequences during it’s normal
+            search workflow, only their coordinates. However, sequences can automatically be retrieved from the NCBI
+            by specifying the Download sequences parameter. cblaster will then write them to a file in FASTA format.
+        </p>
+        <p>
+            The Extract sequences module can also filter based on the organism that each hit sequence is on.
+        </p>
+        <p>
+            Advanced: The organism filter uses regular expression patterns based on organism names, but it is not
+            obligatory to use regular expressions. Multiple patterns can be provided, and are additive (i.e. any
+            organism matching any of the patterns will be saved).
+        </p>
+        <h4 id="extractc" class="scroll-offset page-title-smaller" style="font-size: 18px;">Extract clusters</h4>
+        <p>
+            A common next step after a cblaster-search job is to retrieve the identified gene clusters so we can
+            perform additional analysis. cblaster provides the Extract clusters module precisely for this purpose,
+            allowing you to generate GenBank files of specific gene clusters directly from a previous cblaster-search
+            job. Extracting all clusters from a job could take a long time for searches with many results.
+        </p>
+        <h4 id="visualize" class="scroll-offset page-title-smaller" style="font-size: 18px;">Visualization with query clusters</h4>
+        <p>
+            By default, the visualisation offered by cblaster shows only a heatmap of query hits per result cluster.
+            While this is very useful for quickly identifying patterns in large datasets, we generally still want to
+            see how these clusters compare in a more biologically relevant way.
+        </p>
+        <p>
+            The Visualize with query clusters module allows you to do precisely this. Given a previous cblaster-search
+            or cblaster-recompute job and some selected clusters, this module will automatically extract the clusters,
+            then generate an interactive visualisation showing each cluster to-scale using clinker.
+        </p>
+
+        <h4 id="cblastout" class="scroll-offset page-title-smaller" style="font-size: 18px;">cBlaster output</h4>
+        <h5 class="page-subtitle-small">Search mode</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Logs</td>
+              <td>query_headers.csv</td>
+              <td>Overview of headers of the submitted queries. Used when trying to recompute a job.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_binary.txt</td>
+              <td>An absence/presence matrix of input queries vs. cluster hits. Shows the total number of hits in
+                  detected clusters per query sequence.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_plot.html</td>
+              <td>Cluster heatmap visualization. Interactive HTML plot visualizing your input queries per scaffold hit.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_session.json</td>
+              <td>Stores all information about found hit clusters and query sequences. Used when trying to execute a
+                  subsequent cblaster analysis.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_summary.txt</td>
+              <td>Detailed overview of hit details/scores of input queries per scaffold hit.</td>
+            </tr>
+            <tr>
+              <td>Uploads</td>
+              <td>your_input_file.gbk</td>
+              <td>The file you uploaded and what will be used as input file for the analysis.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h5 class="page-subtitle-small">Recompute</h5>
+        <p>The cblaster recompute module has the same output files as the cblaster search analysis.</p>
+        <h5 class="page-subtitle-small">Gene Neighbourhood Estimation (GNE)</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_plot.html</td>
+              <td>Interactive HTML visualization of mean and median hit cluster sizes (bp) at different gap sizes and
+                  total clusters at different gap sizes. Helpful for a visual interpretation of robustness of cluster prediction.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_summary.txt</td>
+              <td>Overview of GNE statistics.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h5 class="page-subtitle-small">Extract sequences</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_sequences.txt</td>
+              <td>Overview of where query genes hit on which scaffolds and positions. Is created when the
+                  "Download sequences" option was not checked.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_sequences.fasta</td>
+              <td>Nucleotide FASTA of scaffold sequences where the query genes hit. Is created when the
+                  "Download sequences" option was checked.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h5 class="page-subtitle-small">Extract clusters</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Results</td>
+              <td>{prefix}{job_id}_cluster{number}.gbk</td>
+              <td>GenBank files of selected cluster hits. {prefix} is only used when a value was entered for the
+                  "Prefix" option. {number} is inherent to the number of extracted clusters.</td>
+            </tr>
+          </tbody>
+        </table>
+        <h5 class="page-subtitle-small">Visualize cluster hits compared to queries</h5>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_plot.html</td>
+              <td>Similar to a clinker plot, but comparisons are only available for your query cluster vs.
+                  individual hit cluster.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between align-items-center mt-5 mb-2">
+          <h4 id="clinker" class="scroll-offset mt-3 mb-2 page-title-smaller">cLinker</h4>
+          <div class="btn-toolbar" role="toolbar" aria-label="cblaster links">
+            <div class="btn-group" role="group">
+              <a class="btn btn-outline-secondary" href="https://github.com/gamcil/clinker" target="_blank"><i class="bi bi-github"></i></a>
+              <a class="btn btn-outline-secondary" href="https://github.com/gamcil/clinker/wiki" target="_blank"><i class="bi bi-book"></i></a>
+              <a class="btn btn-outline-secondary" href="http://dx.doi.org/10.1093/bioinformatics/btab007" target="_blank"><i class="bi bi-quote"></i></a>
+            </div>
+          </div>
+        </div>
+        <p>
+            Given a set of GenBank files, clinker will automatically extract protein translations, perform global
+            alignments between sequences in each cluster, determine the optimal display order based on cluster
+            similarity, and generate an interactive visualisation that can be extensively
+            tweaked before being exported as an SVG file.
+        </p>
+        <p>
+            When executing clinker from a previous job, corresponding GenBank files of the hit clusters will be
+            downloaded (if applicable). When executing clinker as a whole new separate analysis, GenBank files can be
+            uploaded. Next, clinker will automatically extract protein translations, perform global alignments between
+            sequences in each cluster, determine the optimal display order based on cluster similarity, and generate an
+            interactive visualisation that can be extensively tweaked before being exported as an SVG file.
+        </p>
+        <p>
+            An overview of usage, as well as all changeable options, is provided in the visualisation sidebar. Briefly:
+        </p>
+        <ul>
+          <li>Clusters can be rearranged vertically by dragging cluster names.</li>
+          <li>Loci can be moved or resized by hovering over them and dragging the box.</li>
+          <li>The visualisation can be anchored around a specific gene by clicking on it.</li>
+          <li>Clusters and similarity groups can be renamed by clicking on their text.</li>
+          <li>Similarity group colours can be changed by clicking on the circles in the legend.</li>
+          <li>Groups can be removed by right-clicking their label in the legend.</li>
+          <li>The scale bar can be resized by clicking its text and entering a new value (bp).</li>
+        </ul>
+        <h4 id="clinkerout" class="scroll-offset page-title-smaller" style="font-size: 18px;">cLinker output</h4>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Results</td>
+              <td>alignments.txt</td>
+              <td>Overview of identity and similarity percentages between genes in clusters.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_plot.html</td>
+              <td>The clinker visualisation enabling visual comparison of the submitted clusters and creation of such figures.</td>
+            </tr>
+            <tr>
+              <td>Results</td>
+              <td>{job_id}_session.json</td>
+              <td>Stores all information about the cluster alignments.</td>
+            </tr>
+            <tr>
+              <td>Uploads</td>
+              <td>your_input_file.gbk</td>
+              <td>Your uploaded files which have been used as input files.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h4 id="cagecatout" class="scroll-offset page-title-smaller mt-5 mb-2" style="font-size: 18px;">CAGECAT output</h4>
+        <p>
+            Due to the sanitization of input files, your initial uploaded files may have been rewritten, leading to
+            extra GenBank files in your "uploads" folder. In some cases however, the original input file is also present.
+        </p>
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Folder</th>
+              <th scope="col">Filename</th>
+              <th scope="col">Description</th>
+            </tr>
+          </thead>
+          <tbody class="table-group-divider">
+            <tr>
+              <td>Logs</td>
+              <td>CAGECAT_version.txt</td>
+              <td>The version of CAGECAT when your job was executed. Used for backtracking of errors.</td>
+            </tr>
+            <tr>
+              <td>Logs</td>
+              <td>{job_id}.log</td>
+              <td>Log file which stores information about the executed analysis. Output from the executed
+                  programs/tools is stored in this file. May contain sanitization (from antiSMASH tool) information.
+                  Can be inspected to get an impression of the steps that have been executed.</td>
+            </tr>
+            <tr>
+              <td>Logs</td>
+              <td>{job_id}_command.txt</td>
+              <td>Command line interface command that was executed on CAGECAT's servers. Can be inspected to learn
+                  how submitted parameters are used in a command, executed using the command line interface.</td>
+            </tr>
+            <tr>
+              <td>Logs</td>
+              <td>{job_id}_options.txt</td>
+              <td>Overview of submitted parameters and their values.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h6 id="tutorial" class="scroll-offset fs-4 mt-5 mb-2 page-title-small">Tutorial</h6>
+        <p>This tutorial will guide you in submitting your first job at CAGECAT and will show you how you can search for
+            homologous gene clusters for your protein of interest using a cblaster search analysis. In this tutorial,
+            <b>bold</b> sentences indicate steps for you to perform.
+        </p>
+        <p>
+            To do...
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right-side anchor nav -->
+  <div class="col-lg-3 d-none d-lg-block px-3">
+    <div class="position-sticky" style="top: 8rem;">
+      <h6 class="text-uppercase fw-bold mb-3">On this page</h6>
+      <nav class="nav flex-column small">
+        <a class="fs-6 nav-link py-1 px-2 side-link" href="#tools">Tools</a>
+        <a class="fs-6 nav-link py-1 px-4 side-link" href="#cblaster">cBlaster</a>
+        <a class="nav-link py-1 px-5 side-link" href="#search">Search function</a>
+        <a class="nav-link py-1 px-5 side-link" href="#recompute">Recompute analysis</a>
+        <a class="nav-link py-1 px-5 side-link" href="#neighbourhood">Gene neighbourhood estimation</a>
+        <a class="nav-link py-1 px-5 side-link" href="#extract">Extract sequences</a>
+        <a class="nav-link py-1 px-5 side-link" href="#extractc">Extract clusters</a>
+        <a class="nav-link py-1 px-5 side-link" href="#visualize">Visualize query clusters</a>
+        <a class="nav-link py-1 px-5 side-link" href="#cblastout">cBlaster output</a>
+
+        <a class="fs-6 nav-link py-1 px-4 side-link" href="#clinker">cLinker</a>
+        <a class="nav-link py-1 px-5 side-link" href="#clinkerout">cLinker output</a>
+
+        <a class="fs-6 nav-link py-1 px-4 side-link" href="#cagecatout">CAGECAT output</a>
+
+        <a class="fs-6 nav-link py-1 px-2 side-link" href="#tutorial">Tutorial</a>
+      </nav>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}

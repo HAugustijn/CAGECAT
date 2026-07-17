@@ -1,0 +1,11 @@
+{% block statusbar %}
+<div class="position-sticky" style="top: 6rem;">
+  <ul class="list-unstyled small">
+    <li>Server status: {{ sever_status }}</li>
+    <li>Running jobs: {{ running_jobs }}</li>
+    <li>Queued jobs: {{ queued_jobs }}</li>
+    <li>Jobs processed: {{ queued_jobs }}</li>
+  </ul>
+  <h6>Previous jobs:</h6>
+</div>
+{% endblock %}

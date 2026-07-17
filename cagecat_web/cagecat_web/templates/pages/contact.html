@@ -1,0 +1,74 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="d-flex flex-column h-100">
+      <div class="mt-auto px-5">
+        <h6 class="fs-4 mt-4 mb-3 page-title-small fs-5">Contact</h6>
+        <p>Got questions, need more info, or spotted a bug? Don’t hesitate to reach out, we are happy to help and
+            always appreciate feedback. Get connected by
+            <a rel="open issue" href="https://github.com/malanjary-wur/CAGECAT" class="custom-link" target="_blank">opening an issue</a>
+            or submitting a pull request on GitHub.</p>
+        <h6 class="fs-4 mt-5 mb-3 page-title-small fs-6">The team</h6>
+          <p>CAGECAT is maintained by a small team of developers:</p>
+          <div class="col-md-8 mt-2">
+            <div class="list-group">
+              <a href="https://github.com/HAugustijn" class="list-group-item list-group-item-action">
+                <img src="https://github.com/HAugustijn.png" alt="@HAugustijn" class="rounded-circle me-2" width="32" height="32">
+                <strong class="me-2">Hannah E. Augustijn</strong> Lead Developer CAGECAT v2
+              </a>
+              <a href="https://github.com/MatthiasvdBelt" class="list-group-item list-group-item-action">
+                  <img src="https://github.com/MatthiasvdBelt.png" alt="@MatthiasvdBelt" class="rounded-circle me-2" width="32" height="32">
+                  <strong class="me-2">Matthias van den Belt</strong> Lead Developer CAGECAT v1
+              </a>
+              <a href="https://github.com/malanjary-wur" class="list-group-item list-group-item-action">
+                  <img src="https://github.com/malanjary-wur.png" alt="@malanjary-wur" class="rounded-circle me-2" width="32" height="32">
+                  <strong class="me-2">Mohammad Alanjary</strong> Developer and Project Supervision
+              </a>
+              <a href="https://github.com/hebalkaya" class="list-group-item list-group-item-action">
+                  <img src="https://github.com/hebalkaya.png" alt="@hebalkaya" class="rounded-circle me-2" width="32" height="32">
+                  <strong class="me-2">Hasan Emin Balkaya</strong> Developer
+              </a>
+            </div>
+          </div>
+        <h6 class="fs-4 mt-5 mb-2 page-title-small fs-6">Acknowledgements</h6>
+        <p>The following people contributed during the development of CAGECAT:</p>
+        <ul>
+          <li>Marnix H. Medema - academic project supervision</li>
+          <li>Gilles P. van Wezel - academic project supervision</li>
+        </ul>
+        <h6 class="fs-4 mt-5 mb-2 page-title-small fs-6">Contributors</h6>
+        <p>
+            Contributors to the CAGECAT project include:
+        </p>
+        <div class="row section-spacing-small align-items-center">
+          <div class="col-sm-4 pb-2 pb-sm-2">
+            <img src="{{ url_for('static', path='images/WUR_logo.png') }}"
+                 alt="Logo"
+                 class="img-fluid logo-responsive">
+          </div>
+          <div class="col-sm-4">
+            <img src="{{ url_for('static', path='images/leiden_logo.png') }}"
+                 alt="Logo"
+                 class="img-fluid logo-responsive">
+          </div>
+        </div>
+        <div class="row align-items-center mt-3">
+          <div class="col-sm-4 pb-2 pb-sm-2">
+            <img src="{{ url_for('static', path='images/SNU_logo.png') }}"
+                 alt="Logo"
+                 class="img-fluid logo-responsive">
+          </div>
+          <div class="col-sm-4">
+            <img src="{{ url_for('static', path='images/uwa_logo.png') }}"
+                 alt="Logo"
+                 class="img-fluid logo-responsive">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% macro info(text) %}
+<button type="button" class="btn btn-link btn-info p-0"
+        data-bs-toggle="tooltip"
+        data-bs-placement="top"
+        data-bs-html="true"
+        data-bs-title="<div class='tooltip-content pt-2'><p>{{ text|safe }}</p></div>">
+  <i class="bi bi-question-circle-fill"></i>
+</button>
+{% endmacro %}
+
+{% macro form_input(label_text, input_id, type="text", value="", step="", colWidth1=7, colWidth2=4, placeholder="",
+small=false, padding=2, tooltip_text="") %}
+<div class="row align-items-center pt-{{ padding }}">
+  <div class="col-{{ colWidth1 }}">
+    <label for="{{ input_id }}" class="col-form-label {% if small %}small-font{% endif %}">{{ label_text }}</label>
+  </div>
+  <div class="col-{{ colWidth2 }}">
+    <input type="{{ type }}" id="{{ input_id }}" class="form-control {% if small %}form-control-sm{% endif %}"
+           value="{{ value }}" {% if step %}step="{{ step }}"{% endif %} placeholder="{{ placeholder }}">
+  </div>
+  <div class="col-1 d-flex justify-content-start p-0">
+    {{ info(tooltip_text) }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro form_textarea(label_text, textarea_id, rows=3, placeholder="", small=false, tooltip_text="") %}
+<div class="row align-items-center pt-2">
+  <div class="col-7">
+    <label for="{{ textarea_id }}" class="col-form-label {% if small %}small-font{% endif %}">{{ label_text }}</label>
+  </div>
+  <div class="col-4">
+    <textarea id="{{ textarea_id }}" class="form-control {% if small %}form-control-sm{% endif %}" rows="{{ rows }}" placeholder="{{ placeholder }}"></textarea>
+  </div>
+  <div class="col-1 d-flex justify-content-start p-0">
+    {{ self.info(tooltip_text) }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro form_select(label_text, select_id, options, selected_value="", small=false, tooltip_text="") %}
+<div class="row align-items-center pt-2">
+  <div class="col-7">
+    <label for="{{ select_id }}" class="col-form-label {% if small %}small-font{% endif %}">{{ label_text }}</label>
+  </div>
+  <div class="col-4">
+    <select id="{{ select_id }}" class="form-select {% if small %}form-select-sm{% endif %}">
+      {% for val, label in options %}
+        <option value="{{ val }}" {% if val == selected_value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-1 d-flex justify-content-start p-0">
+    {{ self.info(tooltip_text) }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro form_checkbox(label_text, checkbox_id, small=false, tooltip_text="") %}
+<div class="row align-items-center pt-2">
+  <div class="col-11">
+    <div class="form-check">
+      <input class="form-check-input {% if small %}form-check-sm{% endif %}" type="checkbox" id="{{ checkbox_id }}">
+      <label class="form-check-label {% if small %}small-font{% endif %}" for="{{ checkbox_id }}">{{ label_text }}</label>
+    </div>
+  </div>
+  <div class="col-1 d-flex justify-content-start p-0">
+    {{ self.info(tooltip_text) }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro collapsible_section(button_id, icon_id, text_id, content_id, title) %}
+<div class="row align-items-center mt-1">
+  <div class="col-1 d-flex justify-content-center">
+    <button type="button" class="btn btn-link btn-info p-0" id="{{ button_id }}">
+      <i class="bi bi-plus-circle-fill" id="{{ icon_id }}"></i>
+    </button>
+  </div>
+  <div class="col-11">
+    <h6 id="{{ text_id }}" class="fs-6 mb-0" style="cursor: pointer;">
+      {{ title }}
+    </h6>
+  </div>
+</div>
+<div id="{{ content_id }}" class="d-none mt-3"></div>
+{% endmacro %}

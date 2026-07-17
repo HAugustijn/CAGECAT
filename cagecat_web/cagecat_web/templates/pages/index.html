@@ -1,0 +1,83 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="d-flex flex-column h-100 text-center">
+      <div class="mt-auto px-5">
+        <img src="{{ url_for('static', path='images/cagecat_logo.png') }}"
+             alt="Logo"
+             width="140"
+             height="140"
+             class="align-self-center">
+        <h2 class="page-title-small mt-2">Gene cluster analysis toolbox</h2>
+        <h1 class="page-title">CAGECAT</h1>
+        <h6 class="page-subtitle">Providing comparative gene cluster analysis tools and visualisation modules.</h6>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing">
+  <div class="col-md-12">
+    <div class="d-flex flex-column text-center">
+      <div class="mt-auto px-5">
+        <h6 class="fs-4 mt-2 mb-3 page-title-small">Get started</h6>
+        <p class="fs-6 page-subtitle">Jump right in with running one of our analysis modules or download the source code for offline runs.</p>
+        <div class="d-flex justify-content-center gap-3 mt-4">
+          <a class="btn btn-main" href="https://github.com/malanjary-wur/CAGECAT" target="_blank" role="button">
+            <i class="bi bi-github me-2"></i>Source code</a>
+          <a class="btn btn-main" href="{{ url_for('documentation') }}" role="button">
+            <i class="bi bi-book-half me-2"></i>Read the docs</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row section-spacing-small">
+  <div class="col-sm-6">
+    <div class="card text-center">
+      <div class="card-header">
+        <h6 class="fs-4 mt-2 mb-2 page-title-small fs-5">cblaster</h6>
+      </div>
+      <div class="card-body">
+        <h5 class="page-subtitle fs-6">Tool for finding clusters of co-located homologous sequences in BLAST searches.</h5>
+        <img src="{{ url_for('static', path='images/cblaster_icon.png') }}"
+          alt="cblaster_icon"
+             height="45%"
+             width="45%"
+          class="align-self-center">
+        <div class="d-flex justify-content-center gap-3 mt-4 mb-2">
+          <a class="btn btn-main" href="{{ url_for('cblaster') }}" role="button">
+            <i class="bi bi-lightning-fill me-2"></i>Start analysis</a>
+          <a class="btn btn-main" href="{{ url_for('documentation') }}" role="button">
+            <i class="bi bi-question-diamond-fill me-2"></i>More info</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card text-center">
+      <div class="card-header">
+        <h6 class="fs-4 mt-2 mb-2 page-title-small fs-5">clinker</h6>
+      </div>
+      <div class="card-body">
+        <h5 class="page-subtitle fs-6">Pipeline for easily generating publication-quality gene cluster comparison figures.</h5>
+        <img src="{{ url_for('static', path='images/clinker_icon.png') }}"
+          alt="cblaster_icon"
+             height="45%"
+             width="45%"
+          class="align-self-center">
+        <div class="d-flex justify-content-center gap-3 mt-4 mb-2">
+          <a class="btn btn-main" href="{{ url_for('clinker') }}" role="button">
+            <i class="bi bi-lightning-fill me-2"></i>Start analysis</a>
+          <a class="btn btn-main" href="{{ url_for('documentation') }}" role="button">
+            <i class="bi bi-question-diamond-fill me-2"></i>More info</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+
+{% endblock %}

@@ -1,0 +1,6 @@
+cagecat_web/.venv
+.git
+cagecat_web/tests
+cagecat_web/cagecat_web/dumps
+cagecat_web/.pre-commit-config.yaml
+.idea/

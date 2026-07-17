@@ -1,0 +1,61 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="d-flex flex-column h-100">
+      <div class="mt-auto px-5">
+        <h6 class="fs-4 mt-4 mb-3 page-title-small fs-5">About CAGECAT</h6>
+        <p>The CAGECAT web server facilitates sequence similarity searches and visualisations of microbial operons and gene
+        clusters.It acts as a bridge between analyses executed by complex command line interfaces (CLIs) and aims to
+        provide a user-friendly and intuitive interface to prevent difficult analyses execution for the individual
+        researcher. Our service enables fast analyses using multiple interconnected tools, reducing the time required
+        to execute such analyses. Researchers without programming experience encounter a steep learning curve to execute
+        CLI analysis. Therefore, CAGECAT does not require any programming at all, lowering the technical barrier for
+        researchers to execute gene cluster analyses. Additionally, connecting multiple gene cluster analysis tools on
+        CAGECAT creates an online data analysis pipeline without the difficulties of connecting multiple individual tools,
+        allowing users to combine the capabilities of each tool in customizable streamlined workflows.</p>
+        <p>Executed jobs are stored on CAGECAT’s servers for 30 days and CAGECAT uses functional cookies only.</p>
+
+        <h6 class="fs-4 mt-5 mb-2 page-title-small fs-6">How to cite</h6>
+        <p class="mb-4">If you have found the data/software useful, please consider citing us.
+            <a rel="cite" href="https://doi.org/10.1186/s12859-023-05311-2" class="custom-link"
+               target="_blank">CAGECAT</a> version 1 is available as:
+        </p>
+        <p class="publ_name">
+          van den Belt, M., Gilchrist, C., Booth, T.J. <i>et al.</i> CAGECAT: The CompArative GEne Cluster Analysis Toolbox
+            for rapid search and visualisation of homologous gene clusters. <i>BMC Bioinformatics</i> <b>24</b>, 181 (2023).
+            https://doi.org/10.1186/s12859-023-05311-2
+        </p>
+        <p class="mb-4">The publication for
+            <a rel="cite" href="https://doi.org/10.1093/bioadv/vbab016"
+               class="custom-link" target="_blank">cblaster</a> is available online at as:
+        </p>
+        <p class="publ_name">
+            Gilchrist, C.L.M., Booth, T.J., van Wersch, B. <i>et al.</i>
+            cblaster: a remote search tool for rapid identification and visualization of homologous gene clusters,
+            <i>Bioinformatics Advances</i>, <b>1</b>, 1 (2021). https://doi.org/10.1093/bioadv/vbab016
+        </p>
+        <p class="mb-4">The publication for
+            <a rel="cite" href="https://doi.org/10.1093/bioinformatics/btab007"
+               class="custom-link" target="_blank">clinker</a> is available as:
+        </p>
+        <p class="publ_name">
+            Gilchrist, C.L.M., Chooi, Y.H. clinker & clustermap.js: automatic generation of gene cluster comparison
+            figures, <i>Bioinformatics</i>, <b>37</b>, 16 (2021). https://doi.org/10.1093/bioinformatics/btab007
+        </p>
+        <h6 class="fs-4 mt-5 mb-2 page-title-small fs-6">Site notice</h6>
+        <p>
+            This website is non-commercial and serves purely informative purposes. We strive to provide accurate
+            information; however, no responsibility is taken for the accuracy of the information displayed.
+            Users are encouraged to verify independently and use the information at their own discretion.
+            Information is gathered from credible sources, and we are not responsible for the content of external
+            sites linked from this website. For more information, see the
+            <a rel="license" href="https://opensource.org/license/mit/" class="custom-link" target="_blank">license</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}

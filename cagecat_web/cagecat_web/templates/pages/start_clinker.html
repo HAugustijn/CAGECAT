@@ -1,0 +1,43 @@
+{% extends 'base/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-12 px-5">
+    <h6 class="fs-4 mt-4 mb-3 page-title-small">Get started with clinker</h6>
+    <p>
+      Upload your data, set your preferred parameters, and you are good to go! <br><br>
+      Select the info buttons for a brief description, or head to the documentation for more detailed information.
+    </p>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12 px-5">
+
+    <ul class="nav nav-underline" id="start-analysis-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="start-tab" data-bs-toggle="tab" href="#start_run"
+           role="tab" aria-controls="start_run" aria-selected="true">
+          Start new analysis
+        </a>
+      </li>
+      <li class="nav-item ps-4" role="presentation">
+        <a class="nav-link" id="existing-tab" data-bs-toggle="tab" href="#existing_job"
+           role="tab" aria-controls="existing_job" aria-selected="false">
+          Results for existing job
+        </a>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-4">
+      <div class="tab-pane fade show active" id="start_run" role="tabpanel" aria-labelledby="start-tab">
+        <h6 class="mt-4 mb-3 page-title-smaller">Job description</h6>
+      </div>
+      <div class="tab-pane fade" id="existing_job" role="tabpanel" aria-labelledby="existing-tab">
+        <h6 class="mt-4 mb-3 page-title-smaller">Test</h6>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}

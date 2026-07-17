@@ -1,0 +1,100 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+"Repository" = "https://github.com/malanjary-wur/CAGECAT"
+
+[project]
+name = "cagecat_web"
+version = "2.0.0"
+description = "CAGECAT: The comparative gene cluster analysis toolbox for rapid search and visualisation of homologous gene clusters"
+requires-python = ">=3.12"
+license-files = { paths = ["LICENSE"] }
+authors = [
+    { name = "Hannah E. Augustijn" }
+]
+keywords = [
+    "gene cluster",
+    "genomics",
+    "bioinformatics",
+    "blast"
+]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Development Status :: 4 - Beta",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry"
+]
+
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "gunicorn",
+    "jinja2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit~=3.4",
+    "pytest~=7.4",
+    "ruff~=0.5"
+]
+
+[tool.hatch.envs.dev]
+features = [
+    "dev"
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests/",
+]
+pythonpath = [
+    "cagecat_web/"
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    # flake8-bugbear
+    "B",
+    # flake8-comprehensions
+    "C4",
+    # flake8-eradicate/eradicate
+    "ERA",
+    # isort
+    "I",
+    # pep8-naming
+    "N",
+    # flake8-pie
+    "PIE",
+    # pygrep
+    "PGH",
+    # ruff checks
+    "RUF",
+    # flake8-simplify
+    "SIM",
+    # flake8-type-checking
+    "TCH",
+    # flake8-tidy-imports
+    "TID",
+    # pyupgrade
+    "UP",
+]
+ignore = [
+    # whitespace-before-punctuation
+    "E203",
+    # unneccesary True False
+    "SIM210",
+    # combine nested if conditionals
+    "SIM102",
+    # if-else block
+    "SIM108"
+]

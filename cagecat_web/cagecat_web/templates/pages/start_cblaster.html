@@ -1,0 +1,580 @@
+{% extends 'base/base.html' %}
+{% import 'components/macros.html' as ui %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-11 px-5">
+    <div class="border-bottom mb-4">
+      <h6 class="fs-4 mt-4 mb-4 page-title-small">Get started with cblaster</h6>
+      <p class="mb-4">
+        Upload your data, set your preferred parameters, and you are good to go!
+      </p>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-11 px-5">
+
+    <ul class="nav nav-underline" id="start-analysis-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="start-tab" data-bs-toggle="tab" href="#start_run"
+           role="tab" aria-controls="start_run" aria-selected="true">
+          Start new analysis
+        </a>
+      </li>
+      <li class="nav-item ps-4" role="presentation">
+        <a class="nav-link" id="existing-tab" data-bs-toggle="tab" href="#existing_job"
+           role="tab" aria-controls="existing_job" aria-selected="false">
+          Results for existing job
+        </a>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-4">
+
+      <div class="tab-pane fade show active" id="start_run" role="tabpanel" aria-labelledby="start-tab">
+        <div class="row align-items-center g-3">
+          <div class="col-12 col-md-6 text-center text-md-start">
+            <p class="mb-0">Scan the database for homologous genes or gene clusters.</p>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="d-flex justify-content-center justify-content-md-end gap-2">
+              <a class="btn btn-main btn-sm px-4" href="#" role="button">Load example input</a>
+              <a class="btn btn-main btn-sm px-4" href="#" role="button">Open example output</a>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="fs-6 mt-4 mb-3 p-0 page-title-smaller">Input job details</h6>
+        {{ ui.form_input('Job title (optional)', 'inputJobTitle', colWidth1=3, colWidth2=4, placeholder='Analysis name',
+        tooltip_text='Enter a job title to label and easily identify your analyses. <br>Max 60 characters') }}
+
+        {{ ui.form_input('Email address (optional)', 'inputEmail', colWidth1=3, colWidth2=4, placeholder='name@example.com',
+        tooltip_text='Enter your email to receive a notification when your job is complete') }}
+
+
+        <h6 class="fs-6 mt-4 mb-3 p-0 page-title-smaller">Run mode</h6>
+        <div class="row align-items-center">
+          <div class="col-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="querySeq" checked>
+              <label class="form-check-label" for="querySeq">Query input sequences</label>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="queryHMM">
+              <label class="form-check-label" for="queryHMM">Query using HMM profiles</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-4" id="queryOptions">
+          <div class="col-md-6">
+            <div class="border border-light-subtle rounded bg-light-subtle p-4 h-100" id="seqInputSection">
+              <h6 class="fs-6 mb-3 page-title-smaller">Select input sequences</h6>
+              <div class="row align-items-center">
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="radioDefault" id="inputSeq" checked>
+                    <label class="form-check-label" for="inputSeq">
+                      Upload file
+                    </label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="radioDefault" id="inputNCBI">
+                    <label class="form-check-label" for="inputNCBI">
+                      Get from NCBI
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div id="seqFileUpload" class="d-none">
+                <div class="row align-items-center">
+                  <div class="mb-3">
+                    <input class="form-control mt-4" type="file" id="SeqInputFile">
+                    <div id="SeqInputHelp" class="form-text">
+                      Fasta / GenBank format
+                      <button type="button" class="btn btn-link btn-info ps-1"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top"
+                              data-bs-html="true"
+                              data-bs-title="
+                              <div class='tooltip-content pt-2'>
+                                <p class='mb-1'>Allowed formats:</p>
+                                <p>protein/nucleotide sequences in fasta format and GenBank formatted files</p>
+                                <p>Max individual sequences allowed: 20 <br>(no complete genome)</p>
+                              </div>">
+                        <i class="bi bi-question-circle-fill"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="hmmIdUpload" class="d-none">
+                <div class="row align-items-center">
+                  <div class="mb-3">
+                    <label for="hmmIdInput"></label>
+                    <textarea class="form-control" id="hmmIdInput" rows="3" placeholder="NCBI acc #"></textarea>
+                    <div id="hmmIdHelp" class="form-text">
+                      NCBI accession numbers (amino acid sequences)
+                      <button type="button" class="btn btn-link btn-info ps-1"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top"
+                              data-bs-html="true"
+                              data-bs-title="
+                              <div class='tooltip-content pt-2'>
+                                <p>Max accessions: 20</p>
+                              </div>">
+                        <i class="bi bi-question-circle-fill"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h6 class="fs-6 mb-2 mt-4 page-title-smaller">Settings</h6>
+              <div class="row align-items-center">
+                <div class="col-5">
+                  <label for="selectDb" class="col-form-label">Query database</label>
+                </div>
+                <div class="col-6">
+                  <select id="selectDb" class="form-select" aria-label="Default select example">
+                    <option value="mibig" selected>MIBiG v4</option>
+                    <option value="asdb">antiSMASH db v4</option>
+                    <option value="nr">nr</option>
+                    <option value="refseq">RefSeq protein</option>
+                    <option value="swissprot">Swissprot</option>
+                  </select>
+                </div>
+                <div class="col-1 d-flex justify-content-start p-0">
+                  <button type="button" class="btn btn-link btn-info p-0"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          data-bs-html="true"
+                          data-bs-title="
+                          <div class='tooltip-content pt-2'>
+                            <p>The type of database to be searched.</p>
+                            <p>The nr / RefSeq / Swissprot will query NCBI directly. This has a longer run time</p>
+                          </div>">
+                    <i class="bi bi-question-circle-fill"></i>
+                  </button>
+                </div>
+              </div>
+
+              {{ ui.form_input('Entrez query (optional)', 'inputSpeciesLabel', colWidth1=5, colWidth2=6,
+              placeholder='Streptomyces[organism]',
+              tooltip_text='Filter results using Entrez query.<br><br>An NCBI Entrez term for filtering of the NCBI
+              database during your analysis. Your search results will be restricted to the sequences in the database
+              adhering to this Entrez term') }}
+
+              {{ ui.form_input('Maximum hits', 'inputMaxHits', type='number', value='500',
+              tooltip_text='Maximum number of hits to save from a remote BLAST search. Setting this value too low
+              may result in missed hits/clusters') }}
+
+              <div class="row mt-3 align-items-center">
+                <div class="col-1 d-flex justify-content-center">
+                  <button type="button" class="btn btn-link btn-info p-0" id="toggleFilterBtn">
+                    <i class="bi bi-plus-circle-fill" id="toggleFilterIcon"></i>
+                  </button>
+                </div>
+                <div class="col-11">
+                  <h6 id="toggleFilterText" class="mb-0" style="cursor: pointer;">
+                    Additional filtering
+                  </h6>
+                </div>
+              </div>
+              <div id="filterSettings" class="d-none mt-2 mb-3">
+                <div class="row">
+                  <div class="col-12">
+
+                    {{ ui.form_input('Max e-value', 'inputMaxEval', type='number', value='0.01', step='0.01', small=true,
+                    padding=0, tooltip_text='Maximum e-value for a BLAST hit to be saved to the results') }}
+
+                    {{ ui.form_input('Min identity (%)', 'inputMinIdent', type='number', value='30', small=true,
+                    padding=0, tooltip_text='Minimum percent identity with your input sequences in order for a BLAST
+                    hit to be saved') }}
+
+                    {{ ui.form_input('Min query coverage (%)', 'inputMinCov', type='number', value='50', small=true,
+                    padding=0, tooltip_text='Minimum percent query coverage in order for a BLAST hit to be saved') }}
+
+                  </div>
+                </div>
+              </div>
+
+
+
+              <div class="row align-items-center">
+                <div class="col-12 mt-5">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="IntermedGenes" checked>
+                    <label class="form-check-label" for="IntermedGenes">Find intermediate genes</label>
+                  </div>
+                </div>
+              </div>
+
+              <div id="intermedSettings">
+                <div class="row align-items-center">
+                  <div class="col-12 mt-2">
+
+                    {{ ui.form_input('Max distance', 'inputMaxDist', type='number', value='5000',
+                    tooltip_text='The maximum distance (bp) between the start/end of a cluster and an intermediate gene.
+                    Setting this to a higher value will allow for a broader analysis of the genome neighbourhood of
+                    each cluster') }}
+
+                    {{ ui.form_input('Max clusters', 'inputMaxClust', type='number', value='100',
+                    tooltip_text='The maximum number of clusters for which intermediate genes will be assigned') }}
+
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="border border-light-subtle rounded bg-light-subtle p-4 h-100 d-none" id="hmmInputSection">
+              <h6 class="fs-6 mb-3 page-title-smaller">Select HMM profiles</h6>
+              <div class="row align-items-center">
+                <div class="col-5">
+                  <label for="selectOrg" class="col-form-label">Select organism</label>
+                </div>
+                <div class="col-6">
+                  <select id="selectOrg" class="form-select" aria-label="Default select example">
+                    <option value="mibig" selected>Streptomyces</option>
+                    <option value="asdb">Other species</option>
+                  </select>
+                </div>
+                <div class="col-1 d-flex justify-content-start p-0">
+                  <button type="button" class="btn btn-link btn-info p-0"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          data-bs-html="true"
+                          data-bs-title="
+                          <div class='tooltip-content pt-2'>
+                            <p>Genus-specific database to search in. The database is constructed of all representative
+                            or reference genomes of the selected genus</p>
+                          </div>">
+                    <i class="bi bi-question-circle-fill"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="row align-items-center mt-2">
+                <div class="col-5">
+                  <label for="inputHMMs" class="col-form-label small-font">HMM profiles</label>
+                </div>
+                <div class="col-6">
+                  <textarea class="form-control form-control-sm" id="inputHMMs" rows="3" placeholder="PF01262"></textarea>
+                </div>
+                <div class="col-1 d-flex justify-content-start p-0">
+                  <button type="button" class="btn btn-link btn-info p-0"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          data-bs-html="true"
+                          data-bs-title="
+                          <div class='tooltip-content pt-2'>
+                            <p>Valid HMM profile identifiers from Pfam (e.g. 'PF01262') to use when searching the
+                            selected genus database</p>
+                          </div>">
+                    <i class="bi bi-question-circle-fill"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="row align-items-center mt-5">
+          <div class="col-12 d-flex align-items-center">
+            <button type="button" class="btn btn-link p-0 d-flex align-items-center gap-2 btn-advanced"
+                    id="toggleAdvancedBtn">
+              <span class="fs-6 page-title-smaller mt-2 me-2">Advanced settings</span>
+              <i class="bi bi-plus-circle-fill" id="toggleAdvancedIcon" style="color: #50A57A;"></i>
+            </button>
+          </div>
+        </div>
+        <div id="advancedSettings" class="col-8 mt-3 ms-4 d-none">
+
+          <!-- Clustering Section -->
+          <div class="row align-items-center mt-1">
+            <div class="col-1 d-flex justify-content-center">
+              <button type="button" class="btn btn-link btn-info p-0" id="toggleClusterBtn">
+                <i class="bi bi-plus-circle-fill" id="toggleClusterIcon"></i>
+              </button>
+            </div>
+            <div class="col-11">
+              <h6 id="toggleClusterText" class="fs-6 mb-0" style="cursor: pointer;">
+                Clustering options
+              </h6>
+            </div>
+          </div>
+          <div id="clusterSettings" class="d-none mt-3">
+            <div class="row">
+              <div class="col-12">
+
+                {{ ui.form_input('Max intergenic gap', 'inputMaxIntGap', type='number', value='20000', padding=1, small=true,
+                tooltip_text='Maximum allowed intergenic distance (bp) between conserved hits to be considered
+                in the same cluster block. If you are not sure which value to use, please refer to the
+                Gene Neighbourhood Estimation documentation, as this will help you find a proper value') }}
+
+                {{ ui.form_input('Min percentage', 'inputMinPerc', type='number', value='0', padding=1, small=true,
+                tooltip_text='Minimum percentage of query genes that must be present in clusters hits') }}
+
+                {{ ui.form_input('Min unique query hits', 'inputMinUniqueHits', type='number', value='3', padding=1, small=true,
+                tooltip_text='Minimum number of unique query sequences that must be present in cluster hits.
+                If this parameter exceeds the total number of input queries, the total number of input queries will
+                be used for this parameter') }}
+
+                {{ ui.form_input('Min hits in clusters', 'inputMinHitsClust', type='number', value='3', padding=1, small=true,
+                tooltip_text='Minimum number of query hits in a cluster. If this parameter exceeds the total number
+                of input queries, the total number of input queries will be used for this parameter') }}
+
+
+                <div class="row align-items-center">
+                  <div class="col-7">
+                    <label for="inputReqSeq" class="col-form-label small-font">Required sequences (optional)</label>
+                  </div>
+                  <div class="col-4">
+                    <textarea class="form-control form-control-sm" id="inputReqSeq" rows="2" placeholder="Query seq ID"></textarea>
+                  </div>
+                  <div class="col-1 d-flex justify-content-start p-0">
+                    <button type="button" class="btn btn-link btn-info p-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-html="true"
+                            data-bs-title="
+                            <div class='tooltip-content pt-2'>
+                              <p>Identifiers of query sequences that must be present in cluster hits.<br><br>
+                              Once you upload a query file or enter NCBI identifiers, click a sequence header to
+                              select it. Hold CTRL while clicking to select multiple sequences. To unselect a
+                              header, hold CTRL while clicking the header. A blue/gray background indicates that
+                              that sequence is selected</p>
+                            </div>">
+                      <i class="bi bi-question-circle-fill"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary Table Section -->
+          <div class="row align-items-center mt-1">
+            <div class="col-1 d-flex justify-content-center">
+              <button type="button" class="btn btn-link btn-info p-0" id="toggleSummaryBtn">
+                <i class="bi bi-plus-circle-fill" id="toggleSummaryIcon"></i>
+              </button>
+            </div>
+            <div class="col-11">
+              <h6 id="toggleSummaryText" class="fs-6 mb-0" style="cursor: pointer;">
+                Summary table
+              </h6>
+            </div>
+          </div>
+          <div id="summarySettings" class="d-none mt-3">
+            <div class="row">
+              <div class="col-12">
+                {{ ui.form_input('Delimiter', 'inputDelSum', type='text', padding=1, small=true, placeholder=",",
+                tooltip_text='Single delimiter character that will be used when writing results to a file.<br><br>
+                Results in the summary file will be separated of each other in the by the specified character. Can
+                be left empty, in which case the summary file is formatted in a human-readable form') }}
+
+                {{ ui.form_input('Decimals', 'inputDecSum', type='number', value='2', padding=1, small=true,
+                tooltip_text='Number of decimal places to use when saving score values') }}
+
+
+                <div class="row align-items-center">
+                  <div class="col-11">
+                    <div class="d-flex justify-content-start">
+                      <div class="form-check">
+                        <input class="form-check-input form-check-sm" type="checkbox" value="" id="checkHideHeaderSum">
+                        <label class="form-check-label small-font" for="checkHideHeaderSum">Hide headers</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-1 d-flex justify-content-start p-0">
+                    <button type="button" class="btn btn-link btn-info p-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-html="true"
+                            data-bs-title="
+                            <div class='tooltip-content pt-2'>
+                              <p>Enabling this option hides the headers (first row of file indicating the
+                              following columns: organism, scaffold, start, end, score, query_id) of the found
+                              hits when writing to this output file when saving result output</p>
+                            </div>">
+                      <i class="bi bi-question-circle-fill"></i>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Binary Table Section -->
+          <div class="row align-items-center mt-1">
+            <div class="col-1 d-flex justify-content-center">
+              <button type="button" class="btn btn-link btn-info p-0" id="toggleBinaryBtn">
+                <i class="bi bi-plus-circle-fill" id="toggleBinaryIcon"></i>
+              </button>
+            </div>
+            <div class="col-11">
+              <h6 id="toggleBinaryText" class="fs-6 mb-0" style="cursor: pointer;">
+                Binary table
+              </h6>
+            </div>
+          </div>
+          <div id="binarySettings" class="d-none mt-3">
+            <div class="row">
+              <div class="col-12">
+                {{ ui.form_input('Delimiter', 'inputDelBin', type='text', padding=1, small=true, placeholder=",",
+                tooltip_text='Single delimiter character that will be used when writing results to a file.<br><br>
+                Results in the summary file will be separated of each other in the by the specified character. Can
+                be left empty, in which case the summary file is formatted in a human-readable form') }}
+
+                {{ ui.form_input('Decimals', 'inputDecBin', type='number', value='2', padding=1, small=true,
+                tooltip_text='Number of decimal places to use when saving score values') }}
+
+
+                <div class="row align-items-center">
+                  <div class="col-7">
+                    <label for="inputKefFunc" class="col-form-label small-font">Key function</label>
+                  </div>
+                  <div class="col-4">
+                    <select id="inputKefFunc" class="form-select form-select-sm">
+                      <option value="KeyFucLen" selected>Length</option>
+                      <option value="KeyFucSum">Sum</option>
+                      <option value="KeyFucMax">Max</option>
+                    </select>
+                  </div>
+                  <div class="col-1 d-flex justify-content-start p-0">
+                    <button type="button" class="btn btn-link btn-info p-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-html="true"
+                            data-bs-title="
+                            <div class='tooltip-content pt-2'>
+                              <p>Used function to calculate statistics per query per cluster hit. To select the
+                              attribute to be used, select at the 'Hit attribute' input.<br><br>
+
+                              Additional explanation:<br>
+                              Length: write the query count presence in cluster hits<br>
+                              Sum: write the sum per query of the selected attribute<br>
+                              Max: write the maximum value per query of the selected attribute</p>
+                            </div>">
+                      <i class="bi bi-question-circle-fill"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="row align-items-center">
+                  <div class="col-7">
+                    <label for="inputHitAtt" class="col-form-label small-font">Hit attribute</label>
+                  </div>
+                  <div class="col-4">
+                    <select id="inputHitAtt" class="form-select form-select-sm">
+                      <option value="HitAttIdent" selected>Identity</option>
+                      <option value="HitAttCov">Coverage</option>
+                      <option value="HitAttBit">Bitscore</option>
+                      <option value="HitAttEval">E-value</option>
+                    </select>
+                  </div>
+                  <div class="col-1 d-flex justify-content-start p-0">
+                    <button type="button" class="btn btn-link btn-info p-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-html="true"
+                            data-bs-title="
+                            <div class='tooltip-content pt-2'>
+                              <p>The hit attribute used when generating the binary binary table cell values of
+                              hits per query run. Is available when the Binary 'Key function' is not 'length'</p>
+                            </div>">
+                      <i class="bi bi-question-circle-fill"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="row align-items-center">
+                  <div class="col-11">
+                    <div class="d-flex justify-content-start">
+                      <div class="form-check">
+                        <input class="form-check-input form-check-sm" type="checkbox" value="" id="checkHideHeaderBin">
+                        <label class="form-check-label small-font" for="checkHideHeaderBin">Hide headers</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-1 d-flex justify-content-start p-0">
+                    <button type="button" class="btn btn-link btn-info p-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-html="true"
+                            data-bs-title="
+                            <div class='tooltip-content pt-2'>
+                              <p>Enabling this option hides the headers (first row of file indicating the
+                              following columns: organism, scaffold, start, end, score, query_id) of the found
+                              hits when writing to this output file when saving result output</p>
+                            </div>">
+                      <i class="bi bi-question-circle-fill"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Options Section -->
+          <div class="row align-items-center mt-1">
+            <div class="col-1 d-flex justify-content-center">
+              <button type="button" class="btn btn-link btn-info p-0" id="toggleOtherBtn">
+                <i class="bi bi-plus-circle-fill" id="toggleOtherIcon"></i>
+              </button>
+            </div>
+            <div class="col-11">
+              <h6 id="toggleOtherText" class="fs-6 mb-0" style="cursor: pointer;">
+                Additional options
+              </h6>
+            </div>
+          </div>
+          <div id="otherSettings" class="d-none mt-3">
+            <div class="row">
+              <div class="col-12">
+                <div class="row align-items-center">
+                  <div class="col-11">
+                    <div class="d-flex justify-content-start">
+                      <div class="form-check">
+                        <input class="form-check-input form-check-sm" type="checkbox" value="" id="checkSortCLust">
+                        <label class="form-check-label small-font" for="checkSortCLust">Sort clusters</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-1 d-flex justify-content-start p-0">
+                    <button type="button" class="btn btn-link btn-info p-0"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-html="true"
+                            data-bs-title="
+                            <div class='tooltip-content pt-2'>
+                              <p>Sorts the clusters of the final output on cluster score. This means that clusters
+                              of the same organism are not necessarily close together in the output.</p>
+                            </div>">
+                      <i class="bi bi-question-circle-fill"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="tab-pane fade" id="existing_job" role="tabpanel" aria-labelledby="existing-tab">
+          <h6 class="mt-4 mb-3 page-title-smaller">Test</h6>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}
