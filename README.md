@@ -40,13 +40,16 @@ you need different ports; the defaults work out of the box:
 cp .env.example .env
 ```
 
-| Variable    | Default | Description                                             |
-|-------------|---------|---------------------------------------------------------|
-| `HTTP_PORT` | `1340`  | Public port for the web interface (served via nginx).   |
-| `WEB_PORT`  | `8004`  | Localhost-only port for direct access to the FastAPI app. |
+| Variable          | Default | Description                                             |
+|-------------------|---------|---------------------------------------------------------|
+| `HTTP_PORT`       | `1340`  | Public port for the web interface (served via nginx).   |
+| `WEB_PORT`        | `8004`  | Localhost-only port for direct access to the FastAPI app. |
+| `CBLASTER_EMAIL`  | —       | NCBI contact e-mail; **required** for remote cblaster searches. |
+| `CBLASTER_API_KEY`| —       | Optional NCBI API key (raises the request rate limit).  |
 
 > **Note:** `.env` is git-ignored. Keep any secrets (passwords, API keys, SMTP
-> credentials) there.
+> credentials) there. Remote cblaster searches will not start unless
+> `CBLASTER_EMAIL` is set — NCBI requires a contact address.
 
 ### 3. Build and start
 
@@ -60,6 +63,31 @@ take a few minutes. Once it finishes, open:
 ```
 http://localhost:1340
 ```
+
+---
+
+## Using cblaster
+
+1. Open **cblaster**, upload a protein FASTA query (or enter NCBI accessions),
+   choose a database and parameters, and submit. Remote searches use NCBI and
+   require `CBLASTER_EMAIL` to be set (see configuration above).
+2. You are taken to a **results page** that polls the job and, once finished,
+   shows an interactive cluster plot, downloadable result files, and a set of
+   **downstream analyses**:
+   - *Search again* — recompute with different filtering/clustering thresholds
+   - *Gene neighbourhood* — estimate a suitable maximum intergenic gap (`gne`)
+   - *Extract sequences* — hit sequences, optionally as FASTA (`extract`)
+   - *Extract clusters* — clusters as GenBank/BiG-SCAPE (`extract_clusters`)
+   - *Visualise clusters* — a clinker figure (`plot_clusters`)
+3. Your jobs are listed in the left sidebar. This history is stored **in your
+   browser only** (no login), so you see your runs and not other users'. Paste a
+   job ID under *cblaster → Results for existing job* to reopen any job.
+
+The HTTP API mirrors this: `POST /api/jobs/cblaster` to submit,
+`GET /api/jobs/{id}` to poll, `GET /api/jobs/{id}/results` for outputs, and
+`POST /api/jobs/{id}/actions/{action}` to run a downstream analysis. Adding a new
+tool means subclassing `Tool` in
+[`analysis/tools/`](cagecat_web/cagecat_web/analysis/tools) and registering it.
 
 ---
 

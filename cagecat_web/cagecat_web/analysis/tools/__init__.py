@@ -13,6 +13,13 @@ from cagecat_web.analysis.tools.base import (
     UnknownToolError,
 )
 from cagecat_web.analysis.tools.cblaster import CblasterTool
+from cagecat_web.analysis.tools.cblaster_actions import (
+    CblasterExtractClustersTool,
+    CblasterExtractSequencesTool,
+    CblasterGneTool,
+    CblasterPlotClustersTool,
+    CblasterRecomputeTool,
+)
 from cagecat_web.analysis.tools.clinker import ClinkerTool
 
 _REGISTRY: dict[str, Tool] = {}
@@ -37,18 +44,36 @@ def get_tool(name: str) -> Tool:
 
 
 def available_tools() -> list[str]:
-    """Return the sorted names of all registered tools."""
-    return sorted(_REGISTRY)
+    """Return the sorted names of all primary (non-derived) tools."""
+    return sorted(name for name, tool in _REGISTRY.items() if not tool.is_derived)
 
 
+def actions_for(tool_name: str) -> list[Tool]:
+    """Return the derived tools that can run against ``tool_name``'s output."""
+    return [
+        tool
+        for tool in _REGISTRY.values()
+        if tool.is_derived and tool_name in tool.parent_tools
+    ]
+
+
+# Primary tools (accept uploads).
 register(CblasterTool())
 register(ClinkerTool())
+
+# Derived cblaster tools (operate on a search session).
+register(CblasterRecomputeTool())
+register(CblasterGneTool())
+register(CblasterExtractSequencesTool())
+register(CblasterExtractClustersTool())
+register(CblasterPlotClustersTool())
 
 __all__ = [
     "ParameterError",
     "Tool",
     "ToolError",
     "UnknownToolError",
+    "actions_for",
     "available_tools",
     "get_tool",
     "register",

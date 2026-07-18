@@ -7,9 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from cagecat_web.analysis.input_processor_cblaster import SESSION_FILE
 from cagecat_web.analysis.jobs import Job, JobStatus, JobStore
 from cagecat_web.analysis.session_processor import collect_results
-from cagecat_web.analysis.tools import Tool, get_tool
+from cagecat_web.analysis.tools import Tool, actions_for, get_tool
 from cagecat_web.analysis.validation import ValidationError, validate_upload
 from cagecat_web.config import Settings, get_settings
 
@@ -91,6 +92,74 @@ def submit_job(
         )
         raise
     return store.get(job.id)
+
+
+def submit_derived_job(
+    *,
+    parent_id: str,
+    action: str,
+    params: dict[str, Any],
+    title: str | None = None,
+    store: JobStore | None = None,
+    settings: Settings | None = None,
+) -> Job:
+    """Create and enqueue a derived job (gne, extract, recompute, ...).
+
+    Arguments:
+        parent_id: Id of the completed search job to operate on.
+        action: Name of a registered derived tool.
+        params: Raw form parameters (validated per tool).
+        title: Optional user-supplied label.
+
+    Raises:
+        JobNotFoundError: If the parent job does not exist.
+        UnknownToolError: If ``action`` is not a registered tool.
+        ValidationError: If the action is not applicable or the parent has no
+            usable session, or the parameters are invalid.
+    """
+    settings = settings or get_settings()
+    store = store or JobStore(settings=settings)
+
+    parent = store.get(parent_id)
+    tool = get_tool(action)
+    if not tool.is_derived or parent.tool not in tool.parent_tools:
+        raise ValidationError(
+            f"'{tool.label}' cannot be run on a {parent.tool} job."
+        )
+    if parent.status is not JobStatus.COMPLETED:
+        raise ValidationError("The parent job has not completed successfully.")
+    if not (store.output_dir(parent_id) / SESSION_FILE).is_file():
+        raise ValidationError("The parent job has no session file to analyse.")
+
+    cleaned_params = tool.clean_params(params)
+    job = store.create(
+        tool.name,
+        title=_clean_title(title),
+        params=cleaned_params,
+        parent_id=parent_id,
+    )
+    job = store.update(job, status=JobStatus.QUEUED)
+
+    try:
+        _enqueue(job)
+    except QueueUnavailableError:
+        store.update(
+            job,
+            status=JobStatus.FAILED,
+            error="The job queue is currently unavailable. Please try again later.",
+        )
+        raise
+    return store.get(job.id)
+
+
+def available_actions(job: Job) -> list[dict[str, str]]:
+    """Return derived actions available for a completed job, for the UI."""
+    if job.status is not JobStatus.COMPLETED:
+        return []
+    return [
+        {"name": tool.name, "label": tool.label, "description": tool.description}
+        for tool in actions_for(job.tool)
+    ]
 
 
 def get_job(job_id: str, store: JobStore | None = None) -> Job:

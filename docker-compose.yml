@@ -8,6 +8,9 @@ x-app-environment: &app-environment
   REDIS_URL: "redis://redis:6379/0"
   JOBS_DIR: "/data/jobs"
   JOB_RETENTION_DAYS: "30"
+  # NCBI contact e-mail used by cblaster for remote searches (set in .env).
+  CBLASTER_EMAIL: "${CBLASTER_EMAIL:-}"
+  CBLASTER_API_KEY: "${CBLASTER_API_KEY:-}"
 
 services:
   redis:

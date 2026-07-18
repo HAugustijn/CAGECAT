@@ -56,11 +56,38 @@ def stub_cblaster(monkeypatch):
 
     tool = get_tool("cblaster")
 
+    script = (
+        "import pathlib\n"
+        "pathlib.Path('summary.txt').write_text('done')\n"
+        "pathlib.Path('session.json').write_text('{\"clusters\": []}')\n"
+    )
+
     def fake_build_command(*, input_paths, output_dir, params):
-        return [sys.executable, "-c", "open('summary.txt', 'w').write('done')"]
+        return [sys.executable, "-c", script]
 
     monkeypatch.setattr(tool, "build_command", fake_build_command)
     return tool
+
+
+@pytest.fixture
+def stub_action(monkeypatch):
+    """Replace derived cblaster action commands with harmless marker writers."""
+    import sys
+
+    from cagecat_web.analysis.tools import actions_for
+
+    def make_build(marker: str):
+        script = f"import pathlib; pathlib.Path('{marker}').write_text('ok')"
+
+        def build(*, input_paths, output_dir, params):
+            return [sys.executable, "-c", script]
+
+        return build
+
+    for tool in actions_for("cblaster"):
+        marker = tool.name.replace("cblaster_", "") + "_done.txt"
+        monkeypatch.setattr(tool, "build_command", make_build(marker))
+    return None
 
 
 @pytest.fixture

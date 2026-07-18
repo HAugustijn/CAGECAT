@@ -69,6 +69,9 @@ class Job(BaseModel):
     email: str | None = None
     params: dict[str, Any] = Field(default_factory=dict)
     input_files: list[str] = Field(default_factory=list)
+    #: For derived jobs (gne, extract, recompute, ...): the id of the search
+    #: job whose ``session.json`` this job operates on.
+    parent_id: str | None = None
     task_id: str | None = None
     error: str | None = None
     created_at: datetime = Field(default_factory=_utcnow)
@@ -118,11 +121,19 @@ class JobStore:
         title: str | None = None,
         email: str | None = None,
         params: dict[str, Any] | None = None,
+        parent_id: str | None = None,
     ) -> Job:
         """Create a new job directory and return its :class:`Job`."""
         self.root.mkdir(parents=True, exist_ok=True)
         job_id = str(uuid.uuid4())
-        job = Job(id=job_id, tool=tool, title=title, email=email, params=params or {})
+        job = Job(
+            id=job_id,
+            tool=tool,
+            title=title,
+            email=email,
+            params=params or {},
+            parent_id=parent_id,
+        )
         job_dir = self.root / job_id
         for sub in ("input", "output", "logs"):
             (job_dir / sub).mkdir(parents=True, exist_ok=True)

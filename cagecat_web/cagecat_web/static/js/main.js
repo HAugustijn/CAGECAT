@@ -114,3 +114,117 @@ document.addEventListener("DOMContentLoaded", function () {
     text.addEventListener("click", toggleSection);
   });
 });
+
+// --- cblaster search submission --------------------------------------------
+// Kept in its own listener (and fully null-guarded) so it runs on every page
+// regardless of the page-specific setup above.
+document.addEventListener("DOMContentLoaded", function () {
+  const submitBtn = document.getElementById("cblasterSubmit");
+  if (submitBtn) submitBtn.addEventListener("click", submitCblasterSearch);
+
+  const openBtn = document.getElementById("openExistingJob");
+  if (openBtn) {
+    openBtn.addEventListener("click", function () {
+      const input = document.getElementById("existingJobId");
+      const id = (input && input.value ? input.value : "").trim();
+      if (id) window.location = "/results/" + id;
+    });
+  }
+});
+
+const CBLASTER_BINARY_KEY = { KeyFucLen: "len", KeyFucSum: "sum", KeyFucMax: "max" };
+const CBLASTER_BINARY_ATTR = {
+  HitAttIdent: "identity",
+  HitAttCov: "coverage",
+  HitAttBit: "bitscore",
+  HitAttEval: "evalue",
+};
+
+function submitCblasterSearch() {
+  const alertBox = document.getElementById("cblasterAlert");
+  const btn = document.getElementById("cblasterSubmit");
+  const spinner = document.getElementById("cblasterSubmitSpinner");
+  const val = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+  };
+  const checked = (id) => {
+    const el = document.getElementById(id);
+    return !!(el && el.checked);
+  };
+  const appendIf = (fd, name, value) => {
+    if (value !== "" && value != null) fd.append(name, value);
+  };
+
+  const fd = new FormData();
+  appendIf(fd, "title", val("inputJobTitle"));
+  appendIf(fd, "email", val("inputEmail"));
+
+  // Input: uploaded query file, or NCBI accessions.
+  const useNCBI = checked("inputNCBI");
+  const fileEl = document.getElementById("SeqInputFile");
+  const hasFile = fileEl && fileEl.files && fileEl.files.length;
+  const ncbiIds = val("hmmIdInput").trim();
+  if (hasFile) {
+    fd.append("files", fileEl.files[0]);
+  } else if (useNCBI && ncbiIds) {
+    fd.append("query_ids", ncbiIds);
+  } else {
+    showAlert(alertBox, "danger", "Please upload a query file or enter NCBI accessions.");
+    return;
+  }
+
+  fd.append("mode", "remote");
+  fd.append("database", val("selectDb") || "clusterednr");
+  appendIf(fd, "entrez_query", val("inputSpeciesLabel"));
+  appendIf(fd, "hitlist_size", val("inputMaxHits"));
+  appendIf(fd, "max_evalue", val("inputMaxEval"));
+  appendIf(fd, "min_identity", val("inputMinIdent"));
+  appendIf(fd, "min_coverage", val("inputMinCov"));
+  appendIf(fd, "gap", val("inputMaxIntGap"));
+  appendIf(fd, "unique", val("inputMinUniqueHits"));
+  appendIf(fd, "min_hits", val("inputMinHitsClust"));
+  appendIf(fd, "percentage", val("inputMinPerc"));
+  if (checked("IntermedGenes")) {
+    fd.append("intermediate_genes", "on");
+    appendIf(fd, "max_distance", val("inputMaxDist"));
+  }
+  if (checked("checkSortCLust")) fd.append("sort_clusters", "on");
+  const bkey = CBLASTER_BINARY_KEY[val("inputKefFunc")];
+  if (bkey) fd.append("binary_key", bkey);
+  const battr = CBLASTER_BINARY_ATTR[val("inputHitAtt")];
+  if (battr) fd.append("binary_attr", battr);
+  appendIf(fd, "require", val("inputReqSeq"));
+
+  btn.disabled = true;
+  if (spinner) spinner.classList.remove("d-none");
+  hideAlert(alertBox);
+
+  fetch("/api/jobs/cblaster", { method: "POST", body: fd })
+    .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+    .then(({ ok, b }) => {
+      if (ok) {
+        if (window.CagecatJobs) CagecatJobs.store(b);
+        window.location = "/results/" + b.id;
+      } else {
+        showAlert(alertBox, "danger", b.detail || "Submission failed.");
+        btn.disabled = false;
+        if (spinner) spinner.classList.add("d-none");
+      }
+    })
+    .catch(() => {
+      showAlert(alertBox, "danger", "Could not reach the server. Please try again.");
+      btn.disabled = false;
+      if (spinner) spinner.classList.add("d-none");
+    });
+}
+
+function showAlert(box, type, msg) {
+  if (!box) return;
+  box.className = "alert alert-" + type;
+  box.textContent = msg;
+}
+
+function hideAlert(box) {
+  if (box) box.className = "alert d-none";
+}

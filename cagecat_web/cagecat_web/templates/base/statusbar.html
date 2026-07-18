@@ -1,11 +1,11 @@
 {% block statusbar %}
 <div class="position-sticky" style="top: 6rem;">
-  <ul class="list-unstyled small">
-    <li>Server status: {{ sever_status }}</li>
-    <li>Running jobs: {{ running_jobs }}</li>
-    <li>Queued jobs: {{ queued_jobs }}</li>
-    <li>Jobs processed: {{ queued_jobs }}</li>
+  <h6 class="mb-3">Your jobs</h6>
+  <ul class="list-unstyled" id="previousJobsOverview">
+    <li class="text-body-secondary small">No jobs yet on this browser.</li>
   </ul>
-  <h6>Previous jobs:</h6>
+  <p class="text-body-secondary mt-3" style="font-size: .72rem;">
+    Jobs are stored on this browser only and kept for 30 days.
+  </p>
 </div>
 {% endblock %}

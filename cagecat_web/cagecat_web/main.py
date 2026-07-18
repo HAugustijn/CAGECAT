@@ -38,6 +38,16 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def _no_cache_html(request: Request, call_next):
+    """Prevent browsers from caching HTML pages so versioned asset URLs (and any
+    template changes) are always picked up. Static assets remain cacheable."""
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.exception_handler(ValidationError)
 async def _handle_validation_error(request: Request, exc: ValidationError) -> JSONResponse:
     return JSONResponse(status_code=422, content={"detail": str(exc)})

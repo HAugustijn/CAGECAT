@@ -143,11 +143,12 @@
                 </div>
                 <div class="col-6">
                   <select id="selectDb" class="form-select" aria-label="Default select example">
-                    <option value="mibig" selected>MIBiG v4</option>
-                    <option value="asdb">antiSMASH db v4</option>
-                    <option value="nr">nr</option>
+                    <option value="clusterednr" selected>ClusteredNR (recommended)</option>
+                    <option value="nr">nr (full, slower)</option>
                     <option value="refseq">RefSeq protein</option>
                     <option value="swissprot">Swissprot</option>
+                    <option value="mibig">MIBiG v4 (local db required)</option>
+                    <option value="asdb">antiSMASH db v4 (local db required)</option>
                   </select>
                 </div>
                 <div class="col-1 d-flex justify-content-start p-0">
@@ -569,10 +570,31 @@
 
         </div>
 
-        <div class="tab-pane fade" id="existing_job" role="tabpanel" aria-labelledby="existing-tab">
-          <h6 class="mt-4 mb-3 page-title-smaller">Test</h6>
+        <div class="row align-items-center mt-5">
+          <div class="col-12">
+            <div id="cblasterAlert" class="alert d-none" role="alert"></div>
+            <button type="button" id="cblasterSubmit" class="btn btn-main px-5">
+              <span id="cblasterSubmitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+              Submit cblaster search
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tab-pane fade" id="existing_job" role="tabpanel" aria-labelledby="existing-tab">
+        <h6 class="fs-6 mt-4 mb-3 page-title-smaller">Open an existing job</h6>
+        <div class="row align-items-center">
+          <div class="col-12 col-md-6">
+            <div class="input-group">
+              <input type="text" id="existingJobId" class="form-control" placeholder="Job ID (UUID)">
+              <button class="btn btn-main" type="button" id="openExistingJob">Open results</button>
+            </div>
+            <div class="form-text">Paste the job ID you received to reopen its results.</div>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>

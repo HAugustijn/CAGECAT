@@ -38,6 +38,12 @@ class Tool(ABC):
     accepted_formats: tuple[str, ...] = ()
     min_inputs: int = 1
     max_inputs: int = 1
+    #: Derived tools operate on a parent job's session file instead of an
+    #: upload. ``parent_tools`` lists the parent tool names they apply to.
+    is_derived: bool = False
+    parent_tools: tuple[str, ...] = ()
+    #: Short description shown next to the action in the results UI.
+    description: str = ""
 
     def clean_params(self, raw: dict[str, Any]) -> dict[str, Any]:
         """Validate and normalise raw form parameters.

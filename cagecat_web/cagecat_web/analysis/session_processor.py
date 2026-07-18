@@ -31,4 +31,13 @@ def collect_results(job: Job, store: JobStore) -> dict[str, Any]:
     except Exception:
         summary = {}
 
-    return {"files": files, "summary": summary}
+    # Identify the primary HTML plot (if any) so the UI can embed it. Prefer a
+    # file literally named plot.html, otherwise the first .html file.
+    html_files = [f["name"] for f in files if f["name"].lower().endswith(".html")]
+    plot = None
+    if "plot.html" in html_files:
+        plot = "plot.html"
+    elif html_files:
+        plot = html_files[0]
+
+    return {"files": files, "summary": summary, "plot": plot}

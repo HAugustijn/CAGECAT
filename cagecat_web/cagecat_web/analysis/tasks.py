@@ -31,7 +31,13 @@ def run_job(self, job_id: str) -> dict[str, Any]:
     job = store.update(job, status=JobStatus.RUNNING, task_id=task_id, error=None)
 
     tool = get_tool(job.tool)
-    input_paths = [store.input_dir(job_id) / name for name in job.input_files]
+    if job.parent_id:
+        # Derived jobs operate on the parent search's session file.
+        from cagecat_web.analysis.input_processor_cblaster import SESSION_FILE
+
+        input_paths = [store.output_dir(job.parent_id) / SESSION_FILE]
+    else:
+        input_paths = [store.input_dir(job_id) / name for name in job.input_files]
     output_dir = store.output_dir(job_id)
     logs_dir = store.logs_dir(job_id)
 
