@@ -2,7 +2,6 @@
 cagecat_web/cagecat_web/dumps
 cagecat_web/cagecat_web/data
 cagecat_web/cagecat_web/static/img
-config.py
 
 # Local job working directories (results are transient). Keep the example dir.
 cagecat_web/cagecat_web/upload/*
