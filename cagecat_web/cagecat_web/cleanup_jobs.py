@@ -1,39 +1,64 @@
-import os
-import shutil
+"""Background cleanup of expired job directories.
+
+Job results are transient: directories older than the configured retention
+period are removed so stored data does not accumulate indefinitely. The
+``example`` directory, if present, is always preserved.
+"""
+
+from __future__ import annotations
+
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
+
+from cagecat_web.config import Settings, get_settings
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+EXCLUDED_DIR = "example"
 
 
-def delete_old_directories(target_dir, excluded_dir, age_limit):
-    """Remove directories older than n days.
+def delete_old_directories(target_dir: Path, excluded_dir: str, age_limit_days: int) -> int:
+    """Remove immediate sub-directories older than ``age_limit_days``.
 
     Arguments:
-        target_dir: the target directory in which dirs should be removed
-        excluded_dir: the excluded example directory
-        age_limit: the age limit of directories in days
+        target_dir: Directory whose sub-directories are candidates for removal.
+        excluded_dir: Name of a sub-directory to never delete.
+        age_limit_days: Directories last modified longer ago than this are removed.
+
+    Returns:
+        The number of directories deleted.
     """
-    now = datetime.now()
-    age_limit_delta = timedelta(days=age_limit)
+    import shutil
 
-    for dirname in os.listdir(target_dir):
-        dirpath = os.path.join(target_dir, dirname)
-        if os.path.isdir(dirpath) and dirname != excluded_dir:
-            dir_mod_time = datetime.fromtimestamp(os.path.getmtime(dirpath))
-            if now - dir_mod_time > age_limit_delta:
-                shutil.rmtree(dirpath, ignore_errors=True)
+    if not target_dir.is_dir():
+        return 0
+
+    now = datetime.now(UTC)
+    age_limit = timedelta(days=age_limit_days)
+    deleted = 0
+
+    for path in target_dir.iterdir():
+        if not path.is_dir() or path.name == excluded_dir:
+            continue
+        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+        if now - modified > age_limit:
+            shutil.rmtree(path, ignore_errors=True)
+            deleted += 1
+    return deleted
 
 
-def main():
-    """Runs an infinite loop and executes cleanup every 24 hours."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))  # Path to /cagecat_web/cagecat_web/
-    upload_path = os.path.join(base_dir, "upload")
-
-    # Make sure upload directory exists
-    os.makedirs(upload_path, exist_ok=True)
+def main(settings: Settings | None = None) -> None:
+    """Run an infinite loop, sweeping expired job directories periodically."""
+    settings = settings or get_settings()
+    settings.ensure_directories()
 
     while True:
-        delete_old_directories(upload_path, "example", 30)
-        time.sleep(86400)  # Sleep for 24 hours
+        delete_old_directories(
+            settings.jobs_dir, EXCLUDED_DIR, settings.job_retention_days
+        )
+        time.sleep(settings.cleanup_interval_seconds)
 
 
 if __name__ == "__main__":
