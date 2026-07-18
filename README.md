@@ -9,6 +9,7 @@ operons and homologous gene clusters.
 
 This repository contains CAGECAT v2, the successor to
 [CAGECAT v1](https://doi.org/10.1186/s12859-023-05311-2).
+
 ---
 
 ## Running CAGECAT standalone with Docker

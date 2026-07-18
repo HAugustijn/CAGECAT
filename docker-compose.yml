@@ -1,15 +1,11 @@
 # CAGECAT v2 — standalone Docker stack.
 #
 # Host-facing ports are read from a git-ignored `.env` file (see `.env.example`).
-# None of the values below are secret, so this file is safe to commit; keep any
-# real credentials in `.env` only.
 
 x-app-environment: &app-environment
   PYTHONUNBUFFERED: "1"
-  # Celery broker/result backend. Redis is only reachable on the internal
-  # Docker network.
+  # Celery broker/result backend.
   REDIS_URL: "redis://redis:6379/0"
-  # Shared location for per-job working directories (see the job_data volume).
   JOBS_DIR: "/data/jobs"
   JOB_RETENTION_DAYS: "30"
 
@@ -17,8 +13,6 @@ services:
   redis:
     image: redis:7
     restart: unless-stopped
-    # Redis is reachable only on the internal Docker network. It is intentionally
-    # NOT published to the host, so an unauthenticated instance is never exposed.
     expose:
       - "6379"
 
@@ -30,13 +24,10 @@ services:
       - ./cagecat_web/cagecat_web/routes:/cagecat_web/cagecat_web/routes
       - ./cagecat_web/cagecat_web/templates:/cagecat_web/cagecat_web/templates
       - ./cagecat_web/cagecat_web/static:/cagecat_web/cagecat_web/static
-      # Job results are shared with the worker via a named volume.
       - job_data:/data/jobs
     depends_on:
       - redis
     restart: unless-stopped
-    # Direct access to the app is bound to localhost only; public traffic should
-    # go through nginx. Change WEB_PORT in .env to move this debug port.
     ports:
       - "127.0.0.1:${WEB_PORT:-8004}:8004"
     environment:
@@ -54,7 +45,6 @@ services:
       - --loglevel=info
       - --concurrency=2
     volumes:
-      # The worker executes tools and writes results into the same shared volume.
       - job_data:/data/jobs
     depends_on:
       - redis
@@ -69,8 +59,6 @@ services:
     depends_on:
       - cagecat_web
     volumes:
-      # Serve static assets straight from the source tree so nginx and the app
-      # never drift out of sync.
       - ./cagecat_web/cagecat_web/static:/usr/share/nginx/static:ro
     restart: unless-stopped
     # Main public entry point for the web interface.
