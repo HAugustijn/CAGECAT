@@ -1,15 +1,12 @@
-from celery import Celery
+"""Celery entry point.
 
-celery_app = Celery(
-    'cagecat_tasks',
-    broker='redis://redis:6379/0',
-    backend='redis://redis:6379/0'
-)
+The canonical Celery application lives in
+:mod:`cagecat_web.celery_app`. This module re-exports it so existing worker
+commands referencing ``make_celery:celery_app`` keep working. Prefer::
 
-celery_app.conf.update(
-    task_serializer='json',
-    result_serializer='json',
-    accept_content=['json'],
-    timezone='UTC',
-    enable_utc=True,
-)
+    celery -A cagecat_web.celery_app.celery_app worker
+"""
+
+from cagecat_web.celery_app import celery_app
+
+__all__ = ["celery_app"]
