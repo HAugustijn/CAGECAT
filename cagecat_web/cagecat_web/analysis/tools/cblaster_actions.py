@@ -64,7 +64,7 @@ class CblasterRecomputeTool(_DerivedCblasterTool):
             data = json.loads(session.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return {}
-        return {"cluster_count": len(data.get("clusters") or [])}
+        return {"cluster_count": cbi.count_clusters(data)}
 
 
 class CblasterGneTool(_DerivedCblasterTool):

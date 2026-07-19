@@ -42,7 +42,14 @@ async def clinker(request: Request):
 
 @api_router.get("/cblaster", name="cblaster", response_class=HTMLResponse)
 async def cblaster(request: Request):
-    return templates.TemplateResponse(request=request, name="pages/start_cblaster.html")
+    from cagecat_web.config import get_settings
+
+    databases = sorted(get_settings().hmm_databases())
+    return templates.TemplateResponse(
+        request=request,
+        name="pages/start_cblaster.html",
+        context={"hmm_databases": databases},
+    )
 
 
 @api_router.get("/results/{job_id}", name="results", response_class=HTMLResponse)

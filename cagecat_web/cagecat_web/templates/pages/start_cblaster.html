@@ -143,8 +143,7 @@
                 </div>
                 <div class="col-6">
                   <select id="selectDb" class="form-select" aria-label="Default select example">
-                    <option value="clusterednr" selected>ClusteredNR (recommended)</option>
-                    <option value="nr">nr (full, slower)</option>
+                    <option value="nr" selected>nr</option>
                     <option value="refseq">RefSeq protein</option>
                     <option value="swissprot">Swissprot</option>
                     <option value="mibig">MIBiG v4 (local db required)</option>
@@ -243,9 +242,12 @@
                   <label for="selectOrg" class="col-form-label">Select organism</label>
                 </div>
                 <div class="col-6">
-                  <select id="selectOrg" class="form-select" aria-label="Default select example">
-                    <option value="mibig" selected>Streptomyces</option>
-                    <option value="asdb">Other species</option>
+                  <select id="selectOrg" class="form-select" aria-label="HMM search database">
+                    {% for db in hmm_databases %}
+                    <option value="{{ db }}">{{ db }}</option>
+                    {% else %}
+                    <option value="" disabled selected>No databases installed</option>
+                    {% endfor %}
                   </select>
                 </div>
                 <div class="col-1 d-flex justify-content-start p-0">
@@ -267,7 +269,7 @@
                   <label for="inputHMMs" class="col-form-label small-font">HMM profiles</label>
                 </div>
                 <div class="col-6">
-                  <textarea class="form-control form-control-sm" id="inputHMMs" rows="3" placeholder="PF01262"></textarea>
+                  <textarea class="form-control form-control-sm" id="inputHMMs" rows="3" placeholder="PF00593.27 PF00664.26 PF00005.30 PF14298"></textarea>
                 </div>
                 <div class="col-1 d-flex justify-content-start p-0">
                   <button type="button" class="btn btn-link btn-info p-0"

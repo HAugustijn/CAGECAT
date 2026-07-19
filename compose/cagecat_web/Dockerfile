@@ -5,7 +5,11 @@ ENV INSTALL_PATH=/cagecat_web
 
 WORKDIR $INSTALL_PATH
 
-RUN apt-get update && apt-get install -y gcc libpq-dev build-essential curl && rm -rf /var/lib/apt/lists/*
+# System packages: build tools + the aligners cblaster shells out to
+# (hmmer for HMM search, diamond for local databases / makedb).
+RUN apt-get update && apt-get install -y \
+    gcc libpq-dev build-essential curl hmmer diamond-aligner \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip
 

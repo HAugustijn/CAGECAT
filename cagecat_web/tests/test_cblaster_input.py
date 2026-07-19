@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 def test_clean_params_defaults():
     cleaned = cb.clean_search_params({})
     assert cleaned["mode"] == "remote"
-    assert cleaned["database"] == "clusterednr"
+    assert cleaned["database"] == "nr"
     assert cleaned["intermediate_genes"] is False
 
 
@@ -70,6 +70,60 @@ def test_build_search_args_toggles_flags(tmp_path: Path):
     assert "--intermediate_genes" in args
     assert "--sort_clusters" in args
     assert args[args.index("--max_distance") + 1] == "4000"
+
+
+def test_hmm_requires_profiles():
+    with pytest.raises(ParameterError, match="Pfam profile"):
+        cb.clean_search_params({"mode": "hmm", "hmm_database": "testdb"})
+
+
+def test_hmm_rejects_unknown_database():
+    with pytest.raises(ParameterError, match="Unknown HMM database"):
+        cb.clean_search_params(
+            {"mode": "hmm", "query_profiles": "PF00005", "hmm_database": "nope"}
+        )
+
+
+def test_hmm_clean_params_ok():
+    cleaned = cb.clean_search_params(
+        {
+            "mode": "hmm",
+            "hmm_database": "testdb",
+            "query_profiles": "PF00593.27 PF00664.26, PF00005.30",
+        }
+    )
+    assert cleaned["mode"] == "hmm"
+    assert cleaned["hmm_database"] == "testdb"
+    # Version suffixes are stripped so profiles match any installed Pfam release.
+    assert cleaned["query_profiles"] == ["PF00593", "PF00664", "PF00005"]
+
+
+def test_hmm_rejects_invalid_profile():
+    with pytest.raises(ParameterError, match="Invalid Pfam"):
+        cb.clean_search_params(
+            {"mode": "hmm", "hmm_database": "testdb", "query_profiles": "notapfam"}
+        )
+
+
+def test_hmm_build_args(tmp_path: Path):
+    params = cb.clean_search_params(
+        {"mode": "hmm", "hmm_database": "testdb", "query_profiles": "PF00005", "gap": "5000"}
+    )
+    args = cb.build_search_args(query_file=None, output_dir=tmp_path, params=params)
+    assert args[args.index("--mode") + 1] == "hmm"
+    assert "--query_profiles" in args
+    assert "PF00005" in args
+    assert "--database_pfam" in args
+    # HMM must not carry BLAST-hit filtering flags.
+    assert "--min_identity" not in args
+    assert "--max_evalue" not in args
+    # Clustering flags still apply.
+    assert args[args.index("--gap") + 1] == "5000"
+
+
+def test_unsupported_mode_rejected():
+    with pytest.raises(ParameterError, match="Unsupported search mode"):
+        cb.clean_search_params({"mode": "combi_remote"})
 
 
 def test_build_recompute_args(tmp_path: Path):

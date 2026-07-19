@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     #: Maximum number of individual sequences accepted in a query file.
     max_sequences: int = 10
 
+    # --- HMM / local databases --------------------------------------------
+    #: Directory holding the Pfam profile database (Pfam-A.hmm.gz + .dat.gz),
+    #: used by cblaster HMM searches. Downloaded once.
+    pfam_dir: Path = PACKAGE_DIR / "databases" / "pfam"
+    #: Directory holding pre-built HMM/local search databases (``<name>.fasta``
+    #: with a companion ``<name>.sqlite3``, built with ``cblaster makedb``).
+    databases_dir: Path = PACKAGE_DIR / "databases"
+
     # --- Queue / broker ----------------------------------------------------
     redis_url: str = "redis://redis:6379/0"
     celery_broker_url: str | None = None
@@ -57,6 +65,19 @@ class Settings(BaseSettings):
     def result_backend(self) -> str:
         """Effective Celery result backend URL."""
         return self.celery_result_backend or self.redis_url
+
+    def hmm_databases(self) -> dict[str, Path]:
+        """Return available HMM/local databases as ``name -> FASTA path``.
+
+        A database is a ``<name>.fasta`` with a companion ``<name>.sqlite3`` in
+        :attr:`databases_dir` (both produced by ``cblaster makedb``).
+        """
+        result: dict[str, Path] = {}
+        if self.databases_dir.is_dir():
+            for fasta in sorted(self.databases_dir.glob("*.fasta")):
+                if fasta.with_suffix(".sqlite3").is_file():
+                    result[fasta.stem] = fasta
+        return result
 
     def ensure_directories(self) -> None:
         """Create the directories this configuration depends on."""

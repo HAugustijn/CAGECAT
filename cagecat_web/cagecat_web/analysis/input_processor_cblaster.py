@@ -8,9 +8,13 @@ tool machinery makes the mapping easy to audit and adjust as cblaster evolves.
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Any
 
 from cagecat_web.analysis.tools.base import ParameterError
+
+#: A Pfam accession, optionally with a version suffix (e.g. PF00005 or PF00005.30).
+_PFAM_RE = re.compile(r"^PF\d{5}(\.\d+)?$", re.IGNORECASE)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -22,11 +26,8 @@ BINARY_FILE = "binary.csv"
 PLOT_FILE = "plot.html"
 
 #: Databases the user may search against, mapped to the NCBI BLAST database name
-#: passed to cblaster's ``--database``. ``clusterednr`` (ClusteredNR,
-#: ``nr_cluster_seq``) is NCBI's current default for protein BLAST: it is much
-#: smaller than full ``nr`` and therefore substantially faster.
-#: Note: ``mibig``/``antismashdb`` require a local DIAMOND database and only work
-#: in local mode; the NCBI names work directly in remote mode.
+#: passed to cblaster's ``--database``.
+#: ``mibig``/``antismashdb`` require a local DIAMOND database (local mode only).
 DATABASES = {
     "clusterednr": "nr_cluster_seq",
     "nr": "nr",
@@ -38,6 +39,10 @@ DATABASES = {
 
 #: cblaster search modes.
 MODES = {"local", "remote", "hmm", "combi_local", "combi_remote"}
+
+#: Modes CAGECAT currently supports end-to-end. ``remote`` searches NCBI with a
+#: sequence/id query; ``hmm`` searches a local database with Pfam profiles.
+SUPPORTED_MODES = {"remote", "hmm"}
 
 #: Binary-table key/attribute choices accepted by cblaster.
 BINARY_KEYS = {"len", "max", "sum"}
@@ -56,6 +61,18 @@ _NUMERIC_PARAMS: dict[str, tuple[str, float, float, bool]] = {
     "max_distance": ("--max_distance", 0, 1_000_000, False),
     "maximum_clusters": ("--maximum_clusters", 1, 1_000_000, False),
 }
+
+
+def count_clusters(session: dict[str, Any]) -> int:
+    """Count hit clusters in a cblaster session.
+
+    Clusters are nested under ``organisms -> scaffolds -> clusters``.
+    """
+    return sum(
+        len(scaffold.get("clusters", []))
+        for organism in session.get("organisms", [])
+        for scaffold in organism.get("scaffolds", [])
+    )
 
 
 def coerce_number(
@@ -95,25 +112,60 @@ def clean_search_params(raw: dict[str, Any]) -> dict[str, Any]:
     Unknown keys are ignored; missing numeric keys fall back to cblaster's own
     defaults by being omitted from the command line.
     """
+    from cagecat_web.config import get_settings
+
     cleaned: dict[str, Any] = {}
 
     mode = str(raw.get("mode", "remote")).lower()
-    if mode not in MODES:
-        raise ParameterError(f"Unknown mode '{mode}'.")
+    if mode not in SUPPORTED_MODES:
+        raise ParameterError(
+            f"Unsupported search mode '{mode}'. Supported modes: "
+            f"{', '.join(sorted(SUPPORTED_MODES))}."
+        )
     cleaned["mode"] = mode
 
-    database = str(raw.get("database", "clusterednr")).lower()
-    if database not in DATABASES:
-        raise ParameterError(f"Unknown database '{database}'.")
-    cleaned["database"] = database
+    if mode == "hmm":
+        profiles = _split_multi(raw.get("query_profiles"))
+        if not profiles:
+            raise ParameterError(
+                "An HMM search needs at least one Pfam profile identifier "
+            )
+        invalid = [p for p in profiles if not _PFAM_RE.match(p)]
+        if invalid:
+            raise ParameterError(
+                f"Invalid Pfam profile identifier(s): {', '.join(invalid)}. "
+            )
+        # Strip version suffixes (PF00005.30 -> PF00005) so profiles match the
+        # installed Pfam release regardless of its per-profile version numbers.
+        cleaned["query_profiles"] = [
+            re.sub(r"\.\d+$", "", p).upper() for p in profiles
+        ]
 
-    query_ids = _split_multi(raw.get("query_ids"))
-    if query_ids:
-        cleaned["query_ids"] = query_ids
+        available = get_settings().hmm_databases()
+        if not available:
+            raise ParameterError(
+                "No HMM search databases are installed on this server."
+            )
+        db_key = str(raw.get("hmm_database", raw.get("database", ""))).strip()
+        if db_key not in available:
+            raise ParameterError(
+                f"Unknown HMM database '{db_key}'. Available: "
+                f"{', '.join(sorted(available))}."
+            )
+        cleaned["hmm_database"] = db_key
+    else:  # remote
+        database = str(raw.get("database", "nr")).lower()
+        if database not in DATABASES:
+            raise ParameterError(f"Unknown database '{database}'.")
+        cleaned["database"] = database
 
-    entrez_query = str(raw.get("entrez_query", "")).strip()
-    if entrez_query:
-        cleaned["entrez_query"] = entrez_query
+        query_ids = _split_multi(raw.get("query_ids"))
+        if query_ids:
+            cleaned["query_ids"] = query_ids
+
+        entrez_query = str(raw.get("entrez_query", "")).strip()
+        if entrez_query:
+            cleaned["entrez_query"] = entrez_query
 
     for key, (_flag, low, high, is_float) in _NUMERIC_PARAMS.items():
         if str(raw.get(key, "")).strip() != "":
@@ -140,21 +192,22 @@ def clean_search_params(raw: dict[str, Any]) -> dict[str, Any]:
     return cleaned
 
 
-def _clustering_and_filtering_args(params: dict[str, Any]) -> list[str]:
-    """Flags shared by ``search`` and ``recompute`` (thresholds + clustering)."""
+#: BLAST-hit filtering flags (not applicable to HMM searches).
+_FILTERING_KEYS = ("max_evalue", "min_identity", "min_coverage")
+#: Clustering flags (applicable to every mode).
+_CLUSTERING_KEYS = ("gap", "unique", "min_hits", "percentage", "maximum_clusters")
+
+
+def _numeric_args(params: dict[str, Any], keys: tuple[str, ...]) -> list[str]:
     args: list[str] = []
-    for key in (
-        "max_evalue",
-        "min_identity",
-        "min_coverage",
-        "gap",
-        "unique",
-        "min_hits",
-        "percentage",
-        "maximum_clusters",
-    ):
+    for key in keys:
         if key in params:
             args += [_NUMERIC_PARAMS[key][0], str(params[key])]
+    return args
+
+
+def _clustering_extras(params: dict[str, Any]) -> list[str]:
+    args: list[str] = []
     if params.get("require"):
         args += ["--require", *params["require"]]
     if params.get("sort_clusters"):
@@ -169,13 +222,12 @@ def build_search_args(
     params: dict[str, Any],
 ) -> list[str]:
     """Build the ``cblaster search`` argv for a validated parameter set."""
+    mode = params.get("mode", "remote")
     args: list[str] = [
         "cblaster",
         "search",
         "--mode",
-        params.get("mode", "remote"),
-        "--database",
-        DATABASES[params.get("database", "clusterednr")],
+        mode,
         "--output",
         str(output_dir / SUMMARY_FILE),
         "--binary",
@@ -186,17 +238,27 @@ def build_search_args(
         str(output_dir / SESSION_FILE),
     ]
 
-    if query_file is not None:
-        args += ["--query_file", str(query_file)]
-    elif params.get("query_ids"):
-        args += ["--query_ids", *params["query_ids"]]
+    if mode == "hmm":
+        from cagecat_web.config import get_settings
 
-    if "hitlist_size" in params:
-        args += ["--hitlist_size", str(params["hitlist_size"])]
-    if params.get("entrez_query"):
-        args += ["--entrez_query", params["entrez_query"]]
+        settings = get_settings()
+        args += ["--query_profiles", *params["query_profiles"]]
+        args += ["--database_pfam", str(settings.pfam_dir)]
+        args += ["--database", str(settings.hmm_databases()[params["hmm_database"]])]
+    else:  # remote
+        args += ["--database", DATABASES[params.get("database", "nr")]]
+        if query_file is not None:
+            args += ["--query_file", str(query_file)]
+        elif params.get("query_ids"):
+            args += ["--query_ids", *params["query_ids"]]
+        if "hitlist_size" in params:
+            args += ["--hitlist_size", str(params["hitlist_size"])]
+        if params.get("entrez_query"):
+            args += ["--entrez_query", params["entrez_query"]]
+        args += _numeric_args(params, _FILTERING_KEYS)
 
-    args += _clustering_and_filtering_args(params)
+    args += _numeric_args(params, _CLUSTERING_KEYS)
+    args += _clustering_extras(params)
 
     if "binary_key" in params:
         args += ["--binary_key", params["binary_key"]]
@@ -232,7 +294,9 @@ def build_recompute_args(
         "--plot",
         str(output_dir / PLOT_FILE),
     ]
-    args += _clustering_and_filtering_args(params)
+    args += _numeric_args(params, _FILTERING_KEYS)
+    args += _numeric_args(params, _CLUSTERING_KEYS)
+    args += _clustering_extras(params)
     if params.get("intermediate_genes"):
         args.append("--intermediate_genes")
         if "max_distance" in params:

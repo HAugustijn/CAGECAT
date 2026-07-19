@@ -8,6 +8,8 @@ x-app-environment: &app-environment
   REDIS_URL: "redis://redis:6379/0"
   JOBS_DIR: "/data/jobs"
   JOB_RETENTION_DAYS: "30"
+  PFAM_DIR: "/data/pfam"
+  DATABASES_DIR: "/data/databases"
   # NCBI contact e-mail used by cblaster for remote searches (set in .env).
   CBLASTER_EMAIL: "${CBLASTER_EMAIL:-}"
   CBLASTER_API_KEY: "${CBLASTER_API_KEY:-}"
@@ -27,7 +29,9 @@ services:
       - ./cagecat_web/cagecat_web/routes:/cagecat_web/cagecat_web/routes
       - ./cagecat_web/cagecat_web/templates:/cagecat_web/cagecat_web/templates
       - ./cagecat_web/cagecat_web/static:/cagecat_web/cagecat_web/static
-      - job_data:/data/jobs
+      # Persistent data on the host: ./data/jobs (per-job UUID folders with
+      # input/, output/, logs/), ./data/pfam (Pfam profiles), ./data/databases.
+      - ./data:/data
     depends_on:
       - redis
     restart: unless-stopped
@@ -48,7 +52,7 @@ services:
       - --loglevel=info
       - --concurrency=2
     volumes:
-      - job_data:/data/jobs
+      - ./data:/data
     depends_on:
       - redis
     restart: unless-stopped
@@ -67,6 +71,3 @@ services:
     # Main public entry point for the web interface.
     ports:
       - "${HTTP_PORT:-1340}:80"
-
-volumes:
-  job_data:

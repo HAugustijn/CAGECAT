@@ -160,27 +160,57 @@ function submitCblasterSearch() {
   appendIf(fd, "title", val("inputJobTitle"));
   appendIf(fd, "email", val("inputEmail"));
 
-  // Input: uploaded query file, or NCBI accessions.
-  const useNCBI = checked("inputNCBI");
-  const fileEl = document.getElementById("SeqInputFile");
-  const hasFile = fileEl && fileEl.files && fileEl.files.length;
-  const ncbiIds = val("hmmIdInput").trim();
-  if (hasFile) {
-    fd.append("files", fileEl.files[0]);
-  } else if (useNCBI && ncbiIds) {
-    fd.append("query_ids", ncbiIds);
-  } else {
-    showAlert(alertBox, "danger", "Please upload a query file or enter NCBI accessions.");
+  const useSeq = checked("querySeq");
+  const useHMM = checked("queryHMM");
+
+  if (useSeq && useHMM) {
+    showAlert(alertBox, "danger",
+      "Combined (sequence + HMM) search is not supported yet — choose either sequences or HMM profiles.");
     return;
   }
 
-  fd.append("mode", "remote");
-  fd.append("database", val("selectDb") || "clusterednr");
-  appendIf(fd, "entrez_query", val("inputSpeciesLabel"));
-  appendIf(fd, "hitlist_size", val("inputMaxHits"));
-  appendIf(fd, "max_evalue", val("inputMaxEval"));
-  appendIf(fd, "min_identity", val("inputMinIdent"));
-  appendIf(fd, "min_coverage", val("inputMinCov"));
+  if (useHMM) {
+    // HMM search: Pfam profiles against a local database, no query file.
+    fd.append("mode", "hmm");
+    const profiles = val("inputHMMs").trim();
+    if (!profiles) {
+      showAlert(alertBox, "danger", "Enter at least one Pfam profile identifier (e.g. PF00005).");
+      return;
+    }
+    fd.append("query_profiles", profiles);
+    const db = val("selectOrg");
+    if (!db) {
+      showAlert(alertBox, "danger", "No HMM search database is available on the server.");
+      return;
+    }
+    fd.append("hmm_database", db);
+  } else if (useSeq) {
+    // Remote search: uploaded query file, or NCBI accessions.
+    fd.append("mode", "remote");
+    const useNCBI = checked("inputNCBI");
+    const fileEl = document.getElementById("SeqInputFile");
+    const hasFile = fileEl && fileEl.files && fileEl.files.length;
+    const ncbiIds = val("hmmIdInput").trim();
+    if (hasFile) {
+      fd.append("files", fileEl.files[0]);
+    } else if (useNCBI && ncbiIds) {
+      fd.append("query_ids", ncbiIds);
+    } else {
+      showAlert(alertBox, "danger", "Please upload a query file or enter NCBI accessions.");
+      return;
+    }
+    fd.append("database", val("selectDb") || "nr");
+    appendIf(fd, "entrez_query", val("inputSpeciesLabel"));
+    appendIf(fd, "hitlist_size", val("inputMaxHits"));
+    appendIf(fd, "max_evalue", val("inputMaxEval"));
+    appendIf(fd, "min_identity", val("inputMinIdent"));
+    appendIf(fd, "min_coverage", val("inputMinCov"));
+  } else {
+    showAlert(alertBox, "danger", "Select a query type: input sequences or HMM profiles.");
+    return;
+  }
+
+  // Clustering options apply to every mode.
   appendIf(fd, "gap", val("inputMaxIntGap"));
   appendIf(fd, "unique", val("inputMinUniqueHits"));
   appendIf(fd, "min_hits", val("inputMinHitsClust"));

@@ -23,7 +23,8 @@ class CblasterTool(Tool):
     name = "cblaster"
     label = "cblaster"
     accepted_formats = ("fasta", "genbank")
-    min_inputs = 1
+    # 0 because HMM searches use Pfam profiles instead of an uploaded query file
+    min_inputs = 0
     max_inputs = 1
 
     def clean_params(self, raw: dict[str, Any]) -> dict[str, Any]:
@@ -51,5 +52,4 @@ class CblasterTool(Tool):
             data = json.loads(session.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return {}
-        clusters = data.get("clusters") or []
-        return {"cluster_count": len(clusters)}
+        return {"cluster_count": cblaster_input.count_clusters(data)}
