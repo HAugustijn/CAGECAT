@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 import subprocess
 from typing import Any
 
@@ -13,15 +14,46 @@ from cagecat_web.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+#: Maximum automatic retries for transient (network) failures.
+MAX_RETRIES = 2
 
-@celery_app.task(bind=True, name="cagecat.run_job")
+#: Substrings in tool stderr that indicate a transient, retryable failure.
+_TRANSIENT_MARKERS = (
+    "Response ended prematurely",
+    "ChunkedEncodingError",
+    "ProtocolError",
+    "IncompleteRead",
+    "Connection aborted",
+    "Connection reset",
+    "ConnectionError",
+    "ConnectionResetError",
+    "RemoteDisconnected",
+    "Read timed out",
+    "ReadTimeout",
+    "Max retries exceeded",
+    "Temporary failure in name resolution",
+    "503 Server Error",
+    "502 Server Error",
+    "500 Server Error",
+)
+
+
+def _is_transient(stderr: str | None) -> bool:
+    """Whether ``stderr`` looks like a transient network error worth retrying."""
+    if not stderr:
+        return False
+    return any(marker in stderr for marker in _TRANSIENT_MARKERS)
+
+
+@celery_app.task(bind=True, name="cagecat.run_job", max_retries=MAX_RETRIES)
 def run_job(self, job_id: str) -> dict[str, Any]:
     """Run the tool associated with ``job_id`` and record the outcome.
 
     The tool is executed as a subprocess whose working directory is the job's
     ``output/`` directory. stdout and stderr are captured to the job's
     ``logs/`` directory. The job's status is updated to ``running`` on start
-    and to ``completed`` or ``failed`` on exit.
+    and to ``completed`` or ``failed`` on exit. Transient network failures
+    (e.g. a dropped NCBI connection) are retried automatically.
     """
     settings = get_settings()
     store = JobStore(settings=settings)
@@ -40,6 +72,14 @@ def run_job(self, job_id: str) -> dict[str, Any]:
         input_paths = [store.input_dir(job_id) / name for name in job.input_files]
     output_dir = store.output_dir(job_id)
     logs_dir = store.logs_dir(job_id)
+
+    # Start each attempt from a clean output directory so a retry never trips
+    # over partial results (e.g. a half-written session file) from a prior run.
+    for stale in output_dir.iterdir():
+        if stale.is_file() or stale.is_symlink():
+            stale.unlink()
+        else:
+            shutil.rmtree(stale, ignore_errors=True)
 
     try:
         command = tool.build_command(
@@ -85,6 +125,19 @@ def run_job(self, job_id: str) -> dict[str, Any]:
     (logs_dir / "stderr.log").write_text(completed.stderr or "", encoding="utf-8")
 
     if completed.returncode != 0:
+        if _is_transient(completed.stderr) and self.request.retries < MAX_RETRIES:
+            attempt = self.request.retries + 1
+            logger.warning(
+                "Job %s: transient error, retry %d/%d", job_id, attempt, MAX_RETRIES
+            )
+            store.update(
+                job,
+                status=JobStatus.QUEUED,
+                error=f"A temporary network error occurred; retrying "
+                f"({attempt}/{MAX_RETRIES})…",
+            )
+            # Exponential backoff: 60s, 120s, 240s.
+            raise self.retry(countdown=60 * (2**self.request.retries))
         store.update(
             job,
             status=JobStatus.FAILED,
