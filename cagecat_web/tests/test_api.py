@@ -51,11 +51,17 @@ def test_invalid_upload_returns_422(client):
     assert response.status_code == 422
 
 
-def test_clinker_requires_multiple_inputs(client, genbank_bytes):
+def test_clinker_rejects_wrong_format(client, fasta_bytes):
+    # clinker accepts GenBank/EMBL/GFF, not FASTA.
     response = client.post(
         "/api/jobs/clinker",
-        files={"files": ("cluster.gbk", genbank_bytes, "text/plain")},
+        files={"files": ("query.fasta", fasta_bytes, "text/plain")},
     )
+    assert response.status_code == 422
+
+
+def test_clinker_requires_a_file(client):
+    response = client.post("/api/jobs/clinker", data={"identity": "0.3"})
     assert response.status_code == 422
     assert "at least" in response.json()["detail"]
 

@@ -1,42 +1,116 @@
 {% extends 'base/base.html' %}
+{% import 'components/macros.html' as ui %}
 
 {% block content %}
 <div class="row">
-  <div class="col-md-12 px-5">
-    <h6 class="fs-4 mt-4 mb-3 page-title-small">Get started with clinker</h6>
-    <p>
-      Upload your data, set your preferred parameters, and you are good to go! <br><br>
-      Select the info buttons for a brief description, or head to the documentation for more detailed information.
-    </p>
+  <div class="col-md-11 px-5">
+    <div class="border-bottom mb-4">
+      <h6 class="fs-4 mt-4 mb-4 page-title-small">Get started with clinker</h6>
+      <p class="mb-4">
+        Upload two or more annotated gene clusters and clinker will align them and
+        build an interactive, to-scale comparison figure.
+      </p>
+    </div>
   </div>
 </div>
+
 <div class="row">
-  <div class="col-md-12 px-5">
+  <div class="col-md-11 px-5">
 
     <ul class="nav nav-underline" id="start-analysis-tabs" role="tablist">
       <li class="nav-item" role="presentation">
         <a class="nav-link active" id="start-tab" data-bs-toggle="tab" href="#start_run"
-           role="tab" aria-controls="start_run" aria-selected="true">
-          Start new analysis
-        </a>
+           role="tab" aria-controls="start_run" aria-selected="true">Start new analysis</a>
       </li>
       <li class="nav-item ps-4" role="presentation">
         <a class="nav-link" id="existing-tab" data-bs-toggle="tab" href="#existing_job"
-           role="tab" aria-controls="existing_job" aria-selected="false">
-          Results for existing job
-        </a>
+           role="tab" aria-controls="existing_job" aria-selected="false">Results for existing job</a>
       </li>
     </ul>
 
     <div class="tab-content mt-4">
       <div class="tab-pane fade show active" id="start_run" role="tabpanel" aria-labelledby="start-tab">
-        <h6 class="mt-4 mb-3 page-title-smaller">Job description</h6>
-      </div>
-      <div class="tab-pane fade" id="existing_job" role="tabpanel" aria-labelledby="existing-tab">
-        <h6 class="mt-4 mb-3 page-title-smaller">Test</h6>
-      </div>
-    </div>
 
+        <h6 class="fs-6 mt-4 mb-3 p-0 page-title-smaller">Input job details</h6>
+        {{ ui.form_input('Job title (optional)', 'clinkerJobTitle', colWidth1=3, colWidth2=4,
+        placeholder='Analysis name', tooltip_text='Enter a job title to label your analyses. Max 60 characters') }}
+        {{ ui.form_input('Email address (optional)', 'clinkerEmail', colWidth1=3, colWidth2=4,
+        placeholder='name@example.com', tooltip_text='Enter your email to receive a notification when your job is complete') }}
+
+        <div class="row mt-4">
+          <div class="col-md-8">
+            <div class="border border-light-subtle rounded bg-light-subtle p-4">
+              <h6 class="fs-6 mb-3 page-title-smaller">Upload gene clusters</h6>
+              <input class="form-control" type="file" id="clinkerFiles" multiple>
+              <div class="form-text">
+                GenBank (.gbk / .gb / .gbff), EMBL or GFF files. Upload two or more files to compare.
+                <button type="button" class="btn btn-link btn-info ps-1" data-bs-toggle="tooltip"
+                        data-bs-placement="top" data-bs-html="true"
+                        data-bs-title="<div class='tooltip-content pt-2'><p>Select multiple files at once. To compare records from a single multi-record GenBank file (e.g. downloaded from NCBI), enable 'Parse records as separate clusters' below.</p></div>">
+                  <i class="bi bi-question-circle-fill"></i>
+                </button>
+              </div>
+
+              <h6 class="fs-6 mb-2 mt-4 page-title-smaller">Alignment settings</h6>
+              {{ ui.form_input('Minimum identity', 'clinkerIdentity', type='number', value='0.3', step='0.05',
+              colWidth1=5, colWidth2=4,
+              tooltip_text='Minimum alignment sequence identity for a gene-gene link to be drawn (0–1, default 0.3)') }}
+
+              {{ ui.form_checkbox('Parse records as separate clusters', 'clinkerAsSeparate',
+              tooltip_text="Enable when a single uploaded GenBank file contains multiple sequences (e.g. an NCBI download); each record becomes its own cluster.") }}
+              {{ ui.form_checkbox('Do not align clusters', 'clinkerNoAlign',
+              tooltip_text='Skip alignment and simply draw the clusters (faster; no gene-gene links).') }}
+              {{ ui.form_checkbox('Keep input file order', 'clinkerUseFileOrder',
+              tooltip_text='Display clusters in the order the files were uploaded, instead of clinker default ordering.') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="row align-items-center mt-4">
+          <div class="col-12 d-flex align-items-center">
+            <button type="button" class="btn btn-link p-0 d-flex align-items-center gap-2 btn-advanced" id="toggleClinkerAdvancedBtn">
+              <span class="fs-6 page-title-smaller mt-2 me-2">Advanced output settings</span>
+              <i class="bi bi-plus-circle-fill" id="toggleClinkerAdvancedIcon" style="color: #50A57A;"></i>
+            </button>
+          </div>
+        </div>
+        <div id="clinkerAdvancedSettings" class="col-md-6 mt-3 ms-2 d-none">
+          {{ ui.form_input('Output delimiter', 'clinkerDelimiter', type='text', placeholder=',', small=true,
+          colWidth1=5, colWidth2=4, tooltip_text='Delimiter for the alignments table. Leave empty for human-readable output.') }}
+          {{ ui.form_input('Decimal places', 'clinkerDecimals', type='number', value='2', small=true,
+          colWidth1=5, colWidth2=4, tooltip_text='Number of decimal places in the alignments/matrix output (default 2).') }}
+          {{ ui.form_checkbox('Hide alignment column headers', 'clinkerHideLinkHeaders', small=true,
+          tooltip_text='Hide the per-link column headers in the alignments output.') }}
+          {{ ui.form_checkbox('Hide alignment cluster headers', 'clinkerHideAlnHeaders', small=true,
+          tooltip_text='Hide the cluster-name headers in the alignments output.') }}
+        </div>
+
+        <div class="row align-items-center mt-5">
+          <div class="col-12">
+            <div id="clinkerAlert" class="alert d-none" role="alert"></div>
+            <button type="button" id="clinkerSubmit" class="btn btn-main px-5">
+              <span id="clinkerSubmitSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+              Submit clinker analysis
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tab-pane fade" id="existing_job" role="tabpanel" aria-labelledby="existing-tab">
+        <h6 class="fs-6 mt-4 mb-3 page-title-smaller">Open an existing job</h6>
+        <div class="row align-items-center">
+          <div class="col-12 col-md-6">
+            <div class="input-group">
+              <input type="text" id="existingJobId" class="form-control" placeholder="Job ID (UUID)">
+              <button class="btn btn-main" type="button" id="openExistingJob">Open results</button>
+            </div>
+            <div class="form-text">Paste the job ID you received to reopen its results.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 <div class="row section-spacing-small"></div>

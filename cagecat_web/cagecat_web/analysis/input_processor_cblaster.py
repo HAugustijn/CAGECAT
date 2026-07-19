@@ -75,6 +75,33 @@ def count_clusters(session: dict[str, Any]) -> int:
     )
 
 
+def parse_clusters(session: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return a flat, UI-friendly list of clusters from a cblaster session.
+
+    Each entry has the cluster ``number`` (as used by extract/plot commands),
+    its organism, scaffold, score, genomic span and gene count.
+    """
+    clusters: list[dict[str, Any]] = []
+    for organism in session.get("organisms", []):
+        name = organism.get("name") or organism.get("strain") or "Unknown organism"
+        for scaffold in organism.get("scaffolds", []):
+            accession = scaffold.get("accession", "")
+            for cluster in scaffold.get("clusters", []):
+                clusters.append(
+                    {
+                        "number": cluster.get("number"),
+                        "organism": name,
+                        "scaffold": accession,
+                        "score": round(float(cluster.get("score", 0) or 0), 2),
+                        "start": cluster.get("start"),
+                        "end": cluster.get("end"),
+                        "n_genes": len(cluster.get("indices", [])),
+                    }
+                )
+    clusters.sort(key=lambda c: (c["number"] is None, c["number"]))
+    return clusters
+
+
 def coerce_number(
     key: str, value: Any, low: float, high: float, is_float: bool
 ) -> float | int:

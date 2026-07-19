@@ -128,7 +128,20 @@ def submit_derived_job(
         )
     if parent.status is not JobStatus.COMPLETED:
         raise ValidationError("The parent job has not completed successfully.")
-    if not (store.output_dir(parent_id) / SESSION_FILE).is_file():
+
+    parent_output = store.output_dir(parent_id)
+    if tool.parent_input == "genbank":
+        from cagecat_web.analysis.validation import FORMAT_EXTENSIONS
+
+        genbank_exts = set(FORMAT_EXTENSIONS["genbank"])
+        genbank_files = [
+            p for p in parent_output.glob("*") if p.suffix.lower() in genbank_exts
+        ]
+        if not genbank_files:
+            raise ValidationError(
+                "This job produced no GenBank clusters to visualise."
+            )
+    elif not (parent_output / SESSION_FILE).is_file():
         raise ValidationError("The parent job has no session file to analyse.")
 
     cleaned_params = tool.clean_params(params)
@@ -173,6 +186,24 @@ def get_job_results(job_id: str, store: JobStore | None = None) -> dict[str, Any
     store = store or JobStore()
     job = store.get(job_id)
     return collect_results(job, store)
+
+
+def get_job_clusters(job_id: str, store: JobStore | None = None) -> list[dict[str, Any]]:
+    """Return the selectable clusters from a cblaster search job's session."""
+    import json
+
+    from cagecat_web.analysis.input_processor_cblaster import parse_clusters
+
+    store = store or JobStore()
+    store.get(job_id)
+    session_path = store.output_dir(job_id) / SESSION_FILE
+    if not session_path.is_file():
+        return []
+    try:
+        data = json.loads(session_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return parse_clusters(data)
 
 
 def _enqueue(job: Job) -> None:

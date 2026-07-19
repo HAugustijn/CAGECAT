@@ -64,10 +64,20 @@ def run_job(self, job_id: str) -> dict[str, Any]:
 
     tool = get_tool(job.tool)
     if job.parent_id:
-        # Derived jobs operate on the parent search's session file.
-        from cagecat_web.analysis.input_processor_cblaster import SESSION_FILE
+        parent_output = store.output_dir(job.parent_id)
+        if tool.parent_input == "genbank":
+            # e.g. clinker aligning the GenBank clusters an extract job produced.
+            from cagecat_web.analysis.validation import FORMAT_EXTENSIONS
 
-        input_paths = [store.output_dir(job.parent_id) / SESSION_FILE]
+            genbank_exts = set(FORMAT_EXTENSIONS["genbank"])
+            input_paths = sorted(
+                p for p in parent_output.glob("*") if p.suffix.lower() in genbank_exts
+            )
+        else:
+            # Most derived jobs operate on the parent search's session file.
+            from cagecat_web.analysis.input_processor_cblaster import SESSION_FILE
+
+            input_paths = [parent_output / SESSION_FILE]
     else:
         input_paths = [store.input_dir(job_id) / name for name in job.input_files]
     output_dir = store.output_dir(job_id)

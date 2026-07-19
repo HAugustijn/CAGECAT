@@ -38,10 +38,14 @@ class Tool(ABC):
     accepted_formats: tuple[str, ...] = ()
     min_inputs: int = 1
     max_inputs: int = 1
-    #: Derived tools operate on a parent job's session file instead of an
-    #: upload. ``parent_tools`` lists the parent tool names they apply to.
+    #: Derived tools operate on a parent job's output instead of an upload.
+    #: ``parent_tools`` lists the parent tool names they apply to.
     is_derived: bool = False
     parent_tools: tuple[str, ...] = ()
+    #: What a derived tool consumes from its parent's output directory:
+    #: ``"session"`` = the cblaster ``session.json``; ``"genbank"`` = all
+    #: GenBank cluster files (e.g. produced by extract_clusters).
+    parent_input: str = "session"
     #: Short description shown next to the action in the results UI.
     description: str = ""
 

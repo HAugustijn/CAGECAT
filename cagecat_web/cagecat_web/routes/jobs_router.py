@@ -161,6 +161,15 @@ async def get_job_results(job_id: str) -> dict[str, Any]:
         raise _not_found(job_id) from exc
 
 
+@jobs_router.get("/jobs/{job_id}/clusters")
+async def get_job_clusters(job_id: str) -> dict[str, Any]:
+    """Return the selectable clusters from a cblaster search's session."""
+    try:
+        return {"clusters": gm.get_job_clusters(job_id)}
+    except JobNotFoundError as exc:
+        raise _not_found(job_id) from exc
+
+
 @jobs_router.get("/jobs/{job_id}/view/{filename:path}")
 async def view_result(job_id: str, filename: str) -> FileResponse:
     """Serve a result file inline (e.g. an HTML plot embedded in an iframe)."""

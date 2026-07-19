@@ -33,7 +33,7 @@ small=false, padding=2, tooltip_text="") %}
     <textarea id="{{ textarea_id }}" class="form-control {% if small %}form-control-sm{% endif %}" rows="{{ rows }}" placeholder="{{ placeholder }}"></textarea>
   </div>
   <div class="col-1 d-flex justify-content-start p-0">
-    {{ self.info(tooltip_text) }}
+    {{ info(tooltip_text) }}
   </div>
 </div>
 {% endmacro %}
@@ -51,7 +51,7 @@ small=false, padding=2, tooltip_text="") %}
     </select>
   </div>
   <div class="col-1 d-flex justify-content-start p-0">
-    {{ self.info(tooltip_text) }}
+    {{ info(tooltip_text) }}
   </div>
 </div>
 {% endmacro %}
@@ -65,7 +65,7 @@ small=false, padding=2, tooltip_text="") %}
     </div>
   </div>
   <div class="col-1 d-flex justify-content-start p-0">
-    {{ self.info(tooltip_text) }}
+    {{ info(tooltip_text) }}
   </div>
 </div>
 {% endmacro %}

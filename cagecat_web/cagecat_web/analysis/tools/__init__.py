@@ -17,10 +17,9 @@ from cagecat_web.analysis.tools.cblaster_actions import (
     CblasterExtractClustersTool,
     CblasterExtractSequencesTool,
     CblasterGneTool,
-    CblasterPlotClustersTool,
     CblasterRecomputeTool,
 )
-from cagecat_web.analysis.tools.clinker import ClinkerTool
+from cagecat_web.analysis.tools.clinker import ClinkerClustersTool, ClinkerTool
 
 _REGISTRY: dict[str, Tool] = {}
 
@@ -66,7 +65,9 @@ register(CblasterRecomputeTool())
 register(CblasterGneTool())
 register(CblasterExtractSequencesTool())
 register(CblasterExtractClustersTool())
-register(CblasterPlotClustersTool())
+
+# cblaster -> clinker handoff (operates on extracted GenBank clusters).
+register(ClinkerClustersTool())
 
 __all__ = [
     "ParameterError",

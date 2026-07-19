@@ -108,6 +108,99 @@
         }
         if (job.actions && job.actions.length) showActions(job.actions);
       });
+    loadClusters();
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;",
+    })[c]);
+  }
+
+  function loadClusters() {
+    fetch("/api/jobs/" + jobId + "/clusters")
+      .then((r) => (r.ok ? r.json() : { clusters: [] }))
+      .then((data) => {
+        const clusters = data.clusters || [];
+        if (!clusters.length) return;
+        renderClusters(clusters);
+      })
+      .catch(() => {});
+  }
+
+  function renderClusters(clusters) {
+    el("clusters-count").textContent = clusters.length;
+    const body = el("clustersBody");
+    body.innerHTML = "";
+    clusters.forEach((c) => {
+      const tr = document.createElement("tr");
+      const loc =
+        c.start != null && c.end != null ? c.start + "–" + c.end : "";
+      tr.innerHTML =
+        '<td><input type="checkbox" class="form-check-input cluster-check" value="' +
+        esc(c.number) + '"></td>' +
+        "<td>" + esc(c.number) + "</td>" +
+        "<td>" + esc(c.organism) + "</td>" +
+        "<td>" + esc(c.scaffold) + "</td>" +
+        "<td>" + esc(c.score) + "</td>" +
+        "<td>" + esc(c.n_genes) + "</td>" +
+        '<td class="text-nowrap">' + esc(loc) + "</td>";
+      body.appendChild(tr);
+    });
+
+    const checks = () =>
+      Array.from(document.querySelectorAll(".cluster-check"));
+    const selected = () => checks().filter((c) => c.checked).map((c) => c.value);
+    const updateCount = () => {
+      const n = selected().length;
+      el("clustersSelectedCount").textContent = n ? n + " selected" : "";
+    };
+    body.addEventListener("change", updateCount);
+    el("clustersAll").addEventListener("click", () => {
+      checks().forEach((c) => (c.checked = true));
+      updateCount();
+    });
+    el("clustersNone").addEventListener("click", () => {
+      checks().forEach((c) => (c.checked = false));
+      el("clustersHeaderCheck").checked = false;
+      updateCount();
+    });
+    el("clustersHeaderCheck").addEventListener("change", (ev) => {
+      checks().forEach((c) => (c.checked = ev.target.checked));
+      updateCount();
+    });
+    el("extractSelected").addEventListener("click", () => {
+      const nums = selected();
+      if (!nums.length) {
+        alert("Select at least one cluster to extract.");
+        return;
+      }
+      const btn = el("extractSelected");
+      btn.disabled = true;
+      const fd = new FormData();
+      fd.append("clusters", nums.join(" "));
+      fd.append("maximum_clusters", String(nums.length));
+      fd.append("format", el("clustersFormat").value);
+      fetch("/api/jobs/" + jobId + "/actions/cblaster_extract_clusters", {
+        method: "POST",
+        body: fd,
+      })
+        .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+        .then(({ ok, b }) => {
+          if (ok) {
+            if (window.CagecatJobs) CagecatJobs.store(b);
+            window.location = "/results/" + b.id;
+          } else {
+            alert(b.detail || "Could not extract clusters.");
+            btn.disabled = false;
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+        });
+    });
+
+    el("clusters-panel").classList.remove("d-none");
   }
 
   function showActions(actions) {

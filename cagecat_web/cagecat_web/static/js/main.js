@@ -258,3 +258,81 @@ function showAlert(box, type, msg) {
 function hideAlert(box) {
   if (box) box.className = "alert d-none";
 }
+
+// --- clinker submission ----------------------------------------------------
+document.addEventListener("DOMContentLoaded", function () {
+  const submitBtn = document.getElementById("clinkerSubmit");
+  if (submitBtn) submitBtn.addEventListener("click", submitClinker);
+
+  const advBtn = document.getElementById("toggleClinkerAdvancedBtn");
+  const advIcon = document.getElementById("toggleClinkerAdvancedIcon");
+  const advSection = document.getElementById("clinkerAdvancedSettings");
+  if (advBtn && advSection) {
+    advBtn.addEventListener("click", function () {
+      advSection.classList.toggle("d-none");
+      if (advIcon) {
+        advIcon.classList.toggle("bi-plus-circle-fill");
+        advIcon.classList.toggle("bi-dash-circle-fill");
+      }
+    });
+  }
+});
+
+function submitClinker() {
+  const alertBox = document.getElementById("clinkerAlert");
+  const btn = document.getElementById("clinkerSubmit");
+  const spinner = document.getElementById("clinkerSubmitSpinner");
+  const val = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+  };
+  const checked = (id) => {
+    const el = document.getElementById(id);
+    return !!(el && el.checked);
+  };
+  const appendIf = (fd, name, value) => {
+    if (value !== "" && value != null) fd.append(name, value);
+  };
+
+  const fileEl = document.getElementById("clinkerFiles");
+  const files = fileEl && fileEl.files ? fileEl.files : [];
+  if (!files.length) {
+    showAlert(alertBox, "danger", "Please upload at least one gene cluster file.");
+    return;
+  }
+
+  const fd = new FormData();
+  appendIf(fd, "title", val("clinkerJobTitle"));
+  appendIf(fd, "email", val("clinkerEmail"));
+  for (let i = 0; i < files.length; i++) fd.append("files", files[i]);
+  appendIf(fd, "identity", val("clinkerIdentity"));
+  appendIf(fd, "delimiter", val("clinkerDelimiter"));
+  appendIf(fd, "decimals", val("clinkerDecimals"));
+  if (checked("clinkerAsSeparate")) fd.append("as_separate_clusters", "on");
+  if (checked("clinkerNoAlign")) fd.append("no_align", "on");
+  if (checked("clinkerUseFileOrder")) fd.append("use_file_order", "on");
+  if (checked("clinkerHideLinkHeaders")) fd.append("hide_link_headers", "on");
+  if (checked("clinkerHideAlnHeaders")) fd.append("hide_aln_headers", "on");
+
+  btn.disabled = true;
+  if (spinner) spinner.classList.remove("d-none");
+  hideAlert(alertBox);
+
+  fetch("/api/jobs/clinker", { method: "POST", body: fd })
+    .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
+    .then(({ ok, b }) => {
+      if (ok) {
+        if (window.CagecatJobs) CagecatJobs.store(b);
+        window.location = "/results/" + b.id;
+      } else {
+        showAlert(alertBox, "danger", b.detail || "Submission failed.");
+        btn.disabled = false;
+        if (spinner) spinner.classList.add("d-none");
+      }
+    })
+    .catch(() => {
+      showAlert(alertBox, "danger", "Could not reach the server. Please try again.");
+      btn.disabled = false;
+      if (spinner) spinner.classList.add("d-none");
+    });
+}

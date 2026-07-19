@@ -126,6 +126,31 @@ def test_unsupported_mode_rejected():
         cb.clean_search_params({"mode": "combi_remote"})
 
 
+def test_parse_clusters():
+    session = {
+        "organisms": [
+            {
+                "name": "haemophilus",
+                "scaffolds": [
+                    {
+                        "accession": "NC_000907.1",
+                        "clusters": [
+                            {"number": 24, "score": 9.07573, "start": 1, "end": 99, "indices": [1, 2, 3]},
+                            {"number": 4, "score": 3.1, "start": 5, "end": 9, "indices": [4]},
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+    clusters = cb.parse_clusters(session)
+    assert [c["number"] for c in clusters] == [4, 24]  # sorted by number
+    assert clusters[1]["organism"] == "haemophilus"
+    assert clusters[1]["scaffold"] == "NC_000907.1"
+    assert clusters[1]["score"] == 9.08
+    assert clusters[1]["n_genes"] == 3
+
+
 def test_build_recompute_args(tmp_path: Path):
     params = cb.clean_search_params({"gap": "40000", "unique": "4"})
     args = cb.build_recompute_args(

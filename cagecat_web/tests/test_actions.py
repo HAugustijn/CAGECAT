@@ -32,9 +32,47 @@ def test_actions_for_search_includes_expected_tools():
         "cblaster_gne",
         "cblaster_extract_sequences",
         "cblaster_extract_clusters",
-        "cblaster_plot_clusters",
         "cblaster_recompute",
     } <= names
+
+
+def test_clinker_handoff_available_on_extract_clusters():
+    names = {tool.name for tool in actions_for("cblaster_extract_clusters")}
+    assert "clinker_clusters" in names
+
+
+def test_clinker_handoff_requires_a_cluster(store):
+    parent = store.create("cblaster_extract_clusters")
+    store.update(parent, status=JobStatus.COMPLETED)  # no GenBank produced
+    with pytest.raises(gm.ValidationError, match="no GenBank clusters"):
+        gm.submit_derived_job(
+            parent_id=parent.id, action="clinker_clusters", params={}, store=store
+        )
+
+
+def test_clinker_handoff_runs(monkeypatch):
+    import sys
+
+    store = JobStore()
+    parent = store.create("cblaster_extract_clusters")
+    store.update(parent, status=JobStatus.COMPLETED)
+    for name in ("cluster1.gbk", "cluster2.gbk"):
+        (store.output_dir(parent.id) / name).write_text("LOCUS x\n//\n")
+
+    tool = get_tool("clinker_clusters")
+    script = "import pathlib; pathlib.Path('clinker_done.txt').write_text('ok')"
+    monkeypatch.setattr(
+        tool,
+        "build_command",
+        lambda *, input_paths, output_dir, params: [sys.executable, "-c", script],
+    )
+
+    job = gm.submit_derived_job(
+        parent_id=parent.id, action="clinker_clusters", params={"identity": "0.3"}
+    )
+    assert job.parent_id == parent.id
+    assert job.status is JobStatus.COMPLETED
+    assert (store.output_dir(job.id) / "clinker_done.txt").is_file()
 
 
 def test_gne_command_shape(tmp_path: Path):

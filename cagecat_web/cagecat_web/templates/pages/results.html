@@ -48,123 +48,139 @@
     </div>
   </div>
 
-  <!-- Completed -->
+  <!-- Completed: downloads + options on top, visualisation at the bottom -->
   <div id="results-panel" class="row d-none">
-    <div class="col-12 col-lg-8 px-4">
-      <div id="plot-panel" class="d-none mb-4">
-        <h6 class="fs-6 mb-3 page-title-smaller">Visualisation</h6>
-        <iframe id="plot-frame" title="Cluster plot" class="w-100 border rounded"
-                style="height: 70vh; background: #fff;"></iframe>
+    <div class="col-12 col-xl-10 px-4">
+
+      <!-- Downloads -->
+      <div class="mb-4">
+        <h6 class="fs-6 mb-2 page-title-smaller">Downloads</h6>
+        <div id="downloads" class="list-group small" style="max-width: 640px;"></div>
       </div>
 
+      <!-- Downstream analyses -->
       <div id="actions-panel" class="d-none mb-4">
-      <h6 class="fs-6 mb-3 page-title-smaller">Downstream analyses</h6>
-      <div class="accordion" id="actionsAccordion">
+        <h6 class="fs-6 mb-2 page-title-smaller">Analyses</h6>
+        <div class="accordion" id="actionsAccordion" style="max-width: 720px;">
 
-        <div class="accordion-item d-none" data-action-card="cblaster_recompute">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-recompute">Search again (recompute)</button>
-          </h2>
-          <div id="act-recompute" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
-            <div class="accordion-body">
-              <form data-action="cblaster_recompute">
-                <div class="row g-2">
-                  <div class="col-6"><label class="form-label small">Max intergenic gap</label><input name="gap" type="number" value="20000" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Min unique query hits</label><input name="unique" type="number" value="3" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Min hits in clusters</label><input name="min_hits" type="number" value="3" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Max e-value</label><input name="max_evalue" type="number" step="0.01" value="0.01" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Min identity (%)</label><input name="min_identity" type="number" value="30" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Min coverage (%)</label><input name="min_coverage" type="number" value="50" class="form-control form-control-sm"></div>
-                </div>
-                <button type="submit" class="btn btn-main btn-sm mt-3">Recompute</button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <div class="accordion-item d-none" data-action-card="cblaster_gne">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-gne">Gene neighbourhood estimation</button>
-          </h2>
-          <div id="act-gne" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
-            <div class="accordion-body">
-              <form data-action="cblaster_gne">
-                <div class="row g-2">
-                  <div class="col-6"><label class="form-label small">Max gap</label><input name="max_gap" type="number" value="100000" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Samples</label><input name="samples" type="number" value="100" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Scale</label>
-                    <select name="scale" class="form-select form-select-sm"><option value="linear">linear</option><option value="log">log</option></select>
+          <div class="accordion-item d-none" data-action-card="cblaster_recompute">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-recompute">Search again (recompute)</button>
+            </h2>
+            <div id="act-recompute" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
+              <div class="accordion-body">
+                <form data-action="cblaster_recompute">
+                  <div class="row g-2">
+                    <div class="col-6"><label class="form-label small">Max intergenic gap</label><input name="gap" type="number" value="20000" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Min unique query hits</label><input name="unique" type="number" value="3" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Min hits in clusters</label><input name="min_hits" type="number" value="3" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Max e-value</label><input name="max_evalue" type="number" step="0.01" value="0.01" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Min identity (%)</label><input name="min_identity" type="number" value="30" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Min coverage (%)</label><input name="min_coverage" type="number" value="50" class="form-control form-control-sm"></div>
                   </div>
-                </div>
-                <button type="submit" class="btn btn-main btn-sm mt-3">Run GNE</button>
-              </form>
+                  <button type="submit" class="btn btn-main btn-sm mt-3">Recompute</button>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="accordion-item d-none" data-action-card="cblaster_extract_sequences">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-extract-seq">Extract sequences</button>
-          </h2>
-          <div id="act-extract-seq" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
-            <div class="accordion-body">
-              <form data-action="cblaster_extract_sequences">
-                <div class="row g-2">
-                  <div class="col-12"><label class="form-label small">Query IDs (optional, space/comma separated)</label><input name="queries" type="text" class="form-control form-control-sm"></div>
-                  <div class="col-12"><label class="form-label small">Organisms (optional, regex)</label><input name="organisms" type="text" class="form-control form-control-sm"></div>
-                  <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="download_sequences" id="dlSeqs"><label class="form-check-label small" for="dlSeqs">Download FASTA sequences from NCBI</label></div>
-                  <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="name_only" id="nameOnly"><label class="form-check-label small" for="nameOnly">Names only (no coordinates)</label></div>
-                </div>
-                <button type="submit" class="btn btn-main btn-sm mt-3">Extract sequences</button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <div class="accordion-item d-none" data-action-card="cblaster_extract_clusters">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-extract-clust">Extract clusters (GenBank)</button>
-          </h2>
-          <div id="act-extract-clust" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
-            <div class="accordion-body">
-              <form data-action="cblaster_extract_clusters">
-                <div class="row g-2">
-                  <div class="col-6"><label class="form-label small">Clusters (e.g. 1-10 25)</label><input name="clusters" type="text" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Max clusters</label><input name="maximum_clusters" type="number" value="50" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Format</label>
-                    <select name="format" class="form-select form-select-sm"><option value="genbank">genbank</option><option value="bigscape">bigscape</option></select>
+          <div class="accordion-item d-none" data-action-card="cblaster_gne">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-gne">Gene neighbourhood estimation</button>
+            </h2>
+            <div id="act-gne" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
+              <div class="accordion-body">
+                <form data-action="cblaster_gne">
+                  <div class="row g-2">
+                    <div class="col-6"><label class="form-label small">Max gap</label><input name="max_gap" type="number" value="100000" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Samples</label><input name="samples" type="number" value="100" class="form-control form-control-sm"></div>
+                    <div class="col-6"><label class="form-label small">Scale</label>
+                      <select name="scale" class="form-select form-select-sm"><option value="linear">linear</option><option value="log">log</option></select>
+                    </div>
                   </div>
-                </div>
-                <button type="submit" class="btn btn-main btn-sm mt-3">Extract clusters</button>
-              </form>
+                  <button type="submit" class="btn btn-main btn-sm mt-3">Run GNE</button>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="accordion-item d-none" data-action-card="cblaster_plot_clusters">
-          <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-plot">Visualise clusters (clinker)</button>
-          </h2>
-          <div id="act-plot" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
-            <div class="accordion-body">
-              <form data-action="cblaster_plot_clusters">
-                <div class="row g-2">
-                  <div class="col-6"><label class="form-label small">Clusters (e.g. 1-10 25)</label><input name="clusters" type="text" class="form-control form-control-sm"></div>
-                  <div class="col-6"><label class="form-label small">Max clusters</label><input name="maximum_clusters" type="number" value="50" class="form-control form-control-sm"></div>
-                </div>
-                <button type="submit" class="btn btn-main btn-sm mt-3">Plot clusters</button>
-              </form>
+          <div class="accordion-item d-none" data-action-card="cblaster_extract_sequences">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-extract-seq">Extract sequences</button>
+            </h2>
+            <div id="act-extract-seq" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
+              <div class="accordion-body">
+                <form data-action="cblaster_extract_sequences">
+                  <div class="row g-2">
+                    <div class="col-12"><label class="form-label small">Query IDs (optional, space/comma separated)</label><input name="queries" type="text" class="form-control form-control-sm"></div>
+                    <div class="col-12"><label class="form-label small">Organisms (optional, regex)</label><input name="organisms" type="text" class="form-control form-control-sm"></div>
+                    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="download_sequences" id="dlSeqs"><label class="form-check-label small" for="dlSeqs">Download FASTA sequences from NCBI</label></div>
+                    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="name_only" id="nameOnly"><label class="form-check-label small" for="nameOnly">Names only (no coordinates)</label></div>
+                  </div>
+                  <button type="submit" class="btn btn-main btn-sm mt-3">Extract sequences</button>
+                </form>
+              </div>
             </div>
           </div>
+
+          <div class="accordion-item d-none" data-action-card="clinker_clusters">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-clinker">Align with clinker</button>
+            </h2>
+            <div id="act-clinker" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
+              <div class="accordion-body">
+                <p class="small text-body-secondary mb-2">Align the extracted GenBank clusters with clinker and build a comparison figure.</p>
+                <form data-action="clinker_clusters">
+                  <div class="row g-2">
+                    <div class="col-6"><label class="form-label small">Minimum identity</label><input name="identity" type="number" step="0.05" value="0.3" class="form-control form-control-sm"></div>
+                    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="use_file_order" id="clinkerActUseOrder"><label class="form-check-label small" for="clinkerActUseOrder">Keep cluster order</label></div>
+                    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="no_align" id="clinkerActNoAlign"><label class="form-check-label small" for="clinkerActNoAlign">Do not align (draw only)</label></div>
+                  </div>
+                  <button type="submit" class="btn btn-main btn-sm mt-3">Run clinker</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
         </div>
-
       </div>
-      </div>
-    </div>
 
-    <div class="col-12 col-lg-4 px-4">
-      <h6 class="fs-6 mb-3 page-title-smaller">Downloads</h6>
-      <div id="downloads" class="list-group small"></div>
+      <!-- Cluster selection (cblaster search / recompute) -->
+      <div id="clusters-panel" class="d-none mb-4">
+        <h6 class="fs-6 mb-1 page-title-smaller">Clusters found (<span id="clusters-count">0</span>)</h6>
+        <p class="small text-body-secondary mb-2">
+          Select clusters, then extract them as GenBank to compare with clinker.
+        </p>
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+          <button type="button" id="clustersAll" class="btn btn-outline-secondary btn-sm">Select all</button>
+          <button type="button" id="clustersNone" class="btn btn-outline-secondary btn-sm">Clear</button>
+          <select id="clustersFormat" class="form-select form-select-sm" style="width:auto;">
+            <option value="genbank">GenBank</option>
+            <option value="bigscape">BiG-SCAPE</option>
+          </select>
+          <button type="button" id="extractSelected" class="btn btn-main btn-sm">Extract selected clusters</button>
+          <span id="clustersSelectedCount" class="small text-body-secondary"></span>
+        </div>
+        <div class="border rounded" style="max-height: 340px; overflow-y: auto;">
+          <table class="table table-sm table-hover align-middle mb-0 small">
+            <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+              <tr>
+                <th style="width: 2.2rem;"><input type="checkbox" id="clustersHeaderCheck" class="form-check-input"></th>
+                <th>#</th><th>Organism</th><th>Scaffold</th><th>Score</th><th>Genes</th><th>Location</th>
+              </tr>
+            </thead>
+            <tbody id="clustersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Visualisation -->
+      <div id="plot-panel" class="d-none">
+        <h6 class="fs-6 mb-2 page-title-smaller">Visualisation</h6>
+        <iframe id="plot-frame" title="Cluster plot" class="w-100 border rounded"
+                style="height: 72vh; background: #fff;"></iframe>
+      </div>
+
     </div>
   </div>
 
