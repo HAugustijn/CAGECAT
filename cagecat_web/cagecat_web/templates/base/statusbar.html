@@ -1,6 +1,13 @@
 {% block statusbar %}
 <div class="position-sticky" style="top: 6rem;">
-  <h6 class="mb-3">Your jobs</h6>
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h6 class="mb-0">Your jobs</h6>
+    <button type="button" class="btn btn-sm btn-link text-body-secondary p-0"
+            title="Clear all jobs from this list" aria-label="Clear all jobs"
+            onclick="if (window.CagecatJobs && confirm('Remove all jobs from this list? (Results on the server are unaffected.)')) CagecatJobs.clear();">
+      <i class="bi bi-trash"></i>
+    </button>
+  </div>
   <ul class="list-unstyled" id="previousJobsOverview">
     <li class="text-body-secondary small">No jobs yet on this browser.</li>
   </ul>

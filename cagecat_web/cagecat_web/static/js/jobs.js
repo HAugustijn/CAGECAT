@@ -53,9 +53,31 @@
     })[c]);
   }
 
+  function remove(id) {
+    save(all().filter((j) => j.id !== id));
+    render();
+  }
+
+  function clear() {
+    localStorage.removeItem(KEY);
+    render();
+  }
+
   function render() {
     const el = document.getElementById("previousJobsOverview");
     if (!el) return;
+    // Attach the delete-button click handler once (event delegation).
+    if (!el.dataset.wired) {
+      el.dataset.wired = "1";
+      el.addEventListener("click", (ev) => {
+        const btn = ev.target.closest("[data-del-id]");
+        if (!btn) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        remove(btn.dataset.delId);
+      });
+    }
+
     const list = all();
     if (!list.length) {
       el.innerHTML =
@@ -65,12 +87,12 @@
     el.innerHTML = "";
     list.forEach((j) => {
       const li = document.createElement("li");
-      li.className = "mb-2";
+      li.className = "mb-2 d-flex align-items-start justify-content-between";
       const label = j.title || j.label || j.id.slice(0, 8);
       li.innerHTML =
         '<a href="/results/' +
         j.id +
-        '" class="text-decoration-none d-block">' +
+        '" class="text-decoration-none flex-grow-1 me-1">' +
         '<span class="badge text-bg-' +
         badge(j.status) +
         '">&nbsp;</span> ' +
@@ -81,7 +103,11 @@
         escapeHtml(j.label) +
         " · " +
         j.id.slice(0, 8) +
-        "</span></a>";
+        "</span></a>" +
+        '<button type="button" class="btn btn-sm btn-link text-body-secondary p-0 lh-1" ' +
+        'title="Remove from list" aria-label="Remove job" data-del-id="' +
+        j.id +
+        '"><i class="bi bi-x-lg"></i></button>';
       el.appendChild(li);
     });
   }
@@ -99,7 +125,7 @@
     });
   }
 
-  window.CagecatJobs = { store, render, all, refresh };
+  window.CagecatJobs = { store, render, all, refresh, remove, clear };
   document.addEventListener("DOMContentLoaded", () => {
     render();
     refresh();
