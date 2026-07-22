@@ -1,0 +1,144 @@
+{% extends 'base/base.html' %}
+{% import 'components/macros.html' as ui %}
+
+{% block title %}geneNeighborhood — CAGECAT{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-11 px-5">
+    <div class="border-bottom mb-4">
+      <h6 class="fs-4 mt-4 mb-4 page-title-small">Get started with geneNeighborhood</h6>
+      <p class="mb-4">
+        Explore the genomic context of your genes, EFI-GNT style. Give it a query
+        (or a finished <a class="custom-link" href="{{ url_for('cblaster') }}">cblaster</a>
+        search) and it fetches the genes surrounding every hit from NCBI, then draws each
+        locus to scale, aligned on its query gene, with homologous genes sharing a colour.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-11 px-5">
+
+    <ul class="nav nav-underline" id="start-analysis-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="cblaster-tab" data-bs-toggle="tab" href="#from_cblaster"
+           role="tab" aria-selected="true">From a cblaster job</a>
+      </li>
+      <li class="nav-item ps-4" role="presentation">
+        <a class="nav-link" id="search-tab" data-bs-toggle="tab" href="#search_seq"
+           role="tab" aria-selected="false">Search sequences</a>
+      </li>
+      <li class="nav-item ps-4" role="presentation">
+        <a class="nav-link" id="existing-tab" data-bs-toggle="tab" href="#existing_job"
+           role="tab" aria-selected="false">Results for existing job</a>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-4">
+
+      <!-- ── From a cblaster job ───────────────────────────────────────── -->
+      <div class="tab-pane fade show active" id="from_cblaster" role="tabpanel">
+        <h6 class="fs-6 mt-4 mb-3 page-title-smaller">Input job details</h6>
+        {{ ui.form_input('Job title (optional)', 'gnCbTitle', colWidth1=3, colWidth2=4,
+        placeholder='Analysis name', tooltip_text='Label for this analysis. Max 60 characters.') }}
+
+        <div class="row mt-4">
+          <div class="col-md-8">
+            <div class="border border-light-subtle rounded bg-light-subtle p-4">
+              <h6 class="fs-6 mb-3 page-title-smaller">cblaster search</h6>
+              {{ ui.form_input('cblaster job ID', 'gnCbJobId', colWidth1=4, colWidth2=6,
+              placeholder='Job ID (UUID)',
+              tooltip_text='The ID of a completed <b>remote (NCBI)</b> cblaster search. Its hit clusters provide the query genes and coordinates.') }}
+
+              <h6 class="fs-6 mb-2 mt-4 page-title-smaller">Neighborhood settings</h6>
+              {{ ui.form_input('Flanking region (kb)', 'gnCbFlank', type='number', value='5', step='1',
+              colWidth1=4, colWidth2=4,
+              tooltip_text='How far up- and downstream of each cluster to fetch genes from NCBI (per side).') }}
+              <p class="form-text mb-0">
+                The surrounding genes are fetched from NCBI automatically (needs a server
+                NCBI email, <code>CBLASTER_EMAIL</code>). Tip: forward a selection straight
+                from a cblaster results page to analyse only the clusters you picked.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row align-items-center mt-5">
+          <div class="col-12">
+            <div id="gnCbAlert" class="alert d-none" role="alert"></div>
+            <button type="button" id="gnCbSubmit" class="btn btn-main px-5">
+              <span id="gnCbSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+              Build neighborhood
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Search query sequences ────────────────────────────────────── -->
+      <div class="tab-pane fade" id="search_seq" role="tabpanel">
+        <h6 class="fs-6 mt-4 mb-3 page-title-smaller">Input job details</h6>
+        {{ ui.form_input('Job title (optional)', 'gnSeTitle', colWidth1=3, colWidth2=4,
+        placeholder='Analysis name', tooltip_text='Label for this analysis. Max 60 characters.') }}
+        {{ ui.form_input('Email address (optional)', 'gnSeEmail', colWidth1=3, colWidth2=4,
+        placeholder='name@example.com', tooltip_text='Get notified when your job is complete.') }}
+
+        <div class="row mt-4">
+          <div class="col-md-8">
+            <div class="border border-light-subtle rounded bg-light-subtle p-4">
+              <h6 class="fs-6 mb-3 page-title-smaller">Query sequences</h6>
+              <input class="form-control" type="file" id="gnSeFile"
+                     accept=".fasta,.fa,.faa,.fna,.fas,.seq,.gb,.gbk,.gbff,.genbank">
+              <div class="form-text">
+                A protein FASTA or an annotated GenBank of your query genes.
+                geneNeighborhood runs a cblaster search, then draws the neighborhood
+                of the top 20 hit clusters (query genes are flagged). Remote searches
+                need a server NCBI email (<code>CBLASTER_EMAIL</code>).
+              </div>
+
+              <h6 class="fs-6 mb-2 mt-4 page-title-smaller">Search settings</h6>
+              {{ ui.form_select('Database', 'gnSeDb', search_databases, selected_value='clusterednr',
+                tooltip_text='Which database to search. NCBI databases fetch the neighborhood remotely; a local database uses the genes stored in it.') }}
+              {{ ui.form_input('Flanking region (kb)', 'gnSeFlank', type='number', value='5', step='1',
+              colWidth1=7, colWidth2=4,
+              tooltip_text='How far up- and downstream of each cluster to fetch genes from NCBI (per side).') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="row align-items-center mt-5">
+          <div class="col-12">
+            <div id="gnSeAlert" class="alert d-none" role="alert"></div>
+            <button type="button" id="gnSeSubmit" class="btn btn-main px-5">
+              <span id="gnSeSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+              Search &amp; build neighborhood
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Existing job ──────────────────────────────────────────────── -->
+      <div class="tab-pane fade" id="existing_job" role="tabpanel">
+        <h6 class="fs-6 mt-4 mb-3 page-title-smaller">Open an existing job</h6>
+        <div class="row align-items-center">
+          <div class="col-12 col-md-6">
+            <div class="input-group">
+              <input type="text" id="gnExistingJobId" class="form-control" placeholder="Job ID (UUID)">
+              <button class="btn btn-main" type="button" id="gnOpenExisting">Open results</button>
+            </div>
+            <div class="form-text">Paste the job ID you received to reopen its figure.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', path='js/start_neighborhood.js') }}?v={{ static_version }}"></script>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends 'base/base.html' %}
+{% import 'components/macros.html' as ui %}
+
+{% block title %}plasmidViz — CAGECAT{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 px-4 px-lg-5">
+    <div class="border-bottom mb-4">
+      <h6 class="fs-4 mt-4 mb-3 page-title-small">plasmidViz — plasmid map editor</h6>
+      <p class="mb-4">
+        Upload an annotated plasmid (GenBank, EMBL or GFF3 + FASTA) or a raw FASTA sequence
+        and plasmidViz builds an interactive, fully editable map. Everything runs in your
+        browser — nothing is uploaded to the server. Recolour, rename, add or hide features,
+        drag labels into place, then export a publication-quality figure.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────  Data / source bar  ───────────────────────── -->
+<div class="row">
+  <div class="col-12 px-4 px-lg-5">
+    <div class="border border-light-subtle rounded bg-light-subtle p-3 p-md-4">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-5">
+          <label for="pvFile" class="form-label page-title-smaller fs-6 mb-1">Load sequence</label>
+          <input class="form-control" type="file" id="pvFile"
+                 accept=".gb,.gbk,.gbff,.genbank,.embl,.gff,.gff3,.fa,.fasta,.fna,.seq,.txt">
+          <div class="form-text">
+            GenBank (.gb/.gbk/.gbff), EMBL (.embl), GFF3 (.gff/.gff3) or FASTA (.fa/.fasta).
+            <button type="button" class="btn btn-link btn-info p-0 ps-1" data-bs-toggle="tooltip"
+                    data-bs-placement="top" data-bs-html="true"
+                    data-bs-title="<div class='tooltip-content pt-2'><p>Annotated files (GenBank/EMBL/GFF) are drawn with their existing features. For raw FASTA, use <b>Auto-annotate</b> to detect ORFs and common restriction sites.</p></div>">
+              <i class="bi bi-question-circle-fill"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <label for="pvName" class="form-label page-title-smaller fs-6 mb-1">Plasmid name</label>
+          <input type="text" class="form-control" id="pvName" placeholder="pUC19" maxlength="60">
+        </div>
+        <div class="col-6 col-lg-2">
+          <label for="pvTopology" class="form-label page-title-smaller fs-6 mb-1">Layout</label>
+          <select class="form-select" id="pvTopology">
+            <option value="circular" selected>Circular</option>
+            <option value="linear">Linear</option>
+          </select>
+        </div>
+        <div class="col-12 col-lg-2 d-grid">
+          <button type="button" class="btn btn-outline-secondary" id="pvSampleBtn">
+            <i class="bi bi-stars me-1"></i>Load sample
+          </button>
+        </div>
+      </div>
+      <div id="pvAlert" class="alert d-none mt-3 mb-0" role="alert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────  Toolbar  ─────────────────────────── -->
+<div class="row mt-4">
+  <div class="col-12 px-4 px-lg-5">
+    <div class="d-flex flex-wrap align-items-center gap-2 pv-toolbar">
+
+      <div class="btn-group" role="group" aria-label="History">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pvUndo" title="Undo (Ctrl+Z)" disabled>
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pvRedo" title="Redo (Ctrl+Shift+Z)" disabled>
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+
+      <div class="btn-group" role="group" aria-label="Zoom">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pvZoomOut" title="Zoom out">
+          <i class="bi bi-zoom-out"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pvZoomReset" title="Reset view">
+          <span id="pvZoomLabel">100%</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="pvZoomIn" title="Zoom in">
+          <i class="bi bi-zoom-in"></i>
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="pvAddFeature" title="Add a new feature">
+        <i class="bi bi-plus-lg me-1"></i>Add feature
+      </button>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="pvAutoAnnotate" title="Detect ORFs and restriction sites (needs sequence)">
+        <i class="bi bi-magic me-1"></i>Auto-annotate
+      </button>
+
+      <div class="form-check form-switch ms-1 mb-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="pvSnap" checked>
+        <label class="form-check-label small" for="pvSnap">Snap labels</label>
+      </div>
+
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span class="text-body-secondary small" id="pvSeqInfo">No sequence loaded</span>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-main dropdown-toggle" type="button" id="pvExportBtn"
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-download me-1"></i>Export
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="pvExportBtn">
+            <li><a class="dropdown-item" href="#" data-export="svg">SVG (vector)</a></li>
+            <li><a class="dropdown-item" href="#" data-export="png">PNG (raster, ×3)</a></li>
+            <li><a class="dropdown-item" href="#" data-export="pdf">PDF (print / vector)</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" data-export="json">Project (.json)</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────  Workspace  ───────────────────────── -->
+<div class="row mt-3">
+  <div class="col-12 px-4 px-lg-5">
+    <div class="pv-workspace">
+
+      <!-- Figure canvas -->
+      <div class="pv-canvas-wrap" id="pvCanvasWrap">
+        <div class="pv-empty-state" id="pvEmptyState">
+          <i class="bi bi-record-circle"></i>
+          <p class="mb-1 mt-3">No plasmid loaded yet.</p>
+          <p class="text-body-secondary small mb-0">Upload a file or load the sample to start editing.</p>
+        </div>
+        <!-- SVG figure is injected here by plasmidviz.js -->
+      </div>
+
+      <!-- Inspector -->
+      <div class="pv-inspector" id="pvInspector">
+        <ul class="nav nav-tabs nav-fill pv-inspector-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pvTabFeatures-btn" data-bs-toggle="tab"
+                    data-bs-target="#pvTabFeatures" type="button" role="tab">Features</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pvTabSelected-btn" data-bs-toggle="tab"
+                    data-bs-target="#pvTabSelected" type="button" role="tab">Selected</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="pvTabStyle-btn" data-bs-toggle="tab"
+                    data-bs-target="#pvTabStyle" type="button" role="tab">Style</button>
+          </li>
+        </ul>
+
+        <div class="tab-content pv-inspector-body">
+          <!-- Feature list -->
+          <div class="tab-pane fade show active" id="pvTabFeatures" role="tabpanel">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small text-body-secondary" id="pvFeatureCount">0 features</span>
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary" id="pvShowAll" title="Show all">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="pvHideAll" title="Hide all">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              </div>
+            </div>
+            <input type="search" class="form-control form-control-sm mb-2" id="pvFeatureSearch"
+                   placeholder="Filter features…">
+            <ul class="list-group list-group-flush pv-feature-list" id="pvFeatureList"></ul>
+          </div>
+
+          <!-- Selected feature -->
+          <div class="tab-pane fade" id="pvTabSelected" role="tabpanel">
+            <div id="pvNoSelection" class="text-body-secondary small py-3 text-center">
+              Select a feature on the map or in the list to edit it.
+            </div>
+            <div id="pvSelectedForm" class="d-none"></div>
+          </div>
+
+          <!-- Global style -->
+          <div class="tab-pane fade" id="pvTabStyle" role="tabpanel">
+            <div id="pvStyleForm"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', path='js/seqparse.js') }}?v={{ static_version }}"></script>
+  <script src="{{ url_for('static', path='js/vizcommon.js') }}?v={{ static_version }}"></script>
+  <script src="{{ url_for('static', path='js/plasmidviz.js') }}?v={{ static_version }}"></script>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'base/base.html' %}
+
+{% block title %}geneNeighborhood results — CAGECAT{% endblock %}
+
+{% block content %}
+<div id="gnResultsRoot" data-job-id="{{ job_id }}">
+<div class="row">
+  <div class="col-12 px-4 px-lg-5">
+    <div class="border-bottom mb-3">
+      <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-2 gap-2">
+        <h6 class="fs-4 mb-0 page-title-small">geneNeighborhood</h6>
+        <div class="d-flex gap-2">
+          <button type="button" id="gnToClinker" class="btn btn-main btn-sm d-none">
+            <i class="bi bi-bar-chart-steps me-1"></i>Align with clinker
+          </button>
+          <a href="{{ url_for('neighborhood') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>New analysis
+          </a>
+        </div>
+      </div>
+      <p class="text-body-secondary small mb-1">
+        Job ID: <code id="gnJobIdLabel">{{ job_id }}</code>
+        <span id="gnStatusBadge" class="badge text-bg-secondary ms-2">loading…</span>
+      </p>
+      <div id="gnRunInfo" class="small text-body-secondary mb-2 d-none">
+        <span id="gnRunSummary"></span>
+        <a href="#gnRunDetails" data-bs-toggle="collapse" class="custom-link ms-1">run info</a>
+        <div class="collapse" id="gnRunDetails">
+          <table class="table table-sm small mt-2 mb-0" style="max-width: 34rem;">
+            <tbody id="gnRunTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Status / error while the job runs -->
+<div class="row" id="gnStatusPanel">
+  <div class="col-12 px-4 px-lg-5">
+    <div class="d-flex align-items-center gap-3 py-4" id="gnRunning">
+      <div class="spinner-border text-secondary" role="status" aria-hidden="true"></div>
+      <div>
+        <div class="fw-semibold">Building the neighborhood…</div>
+        <div class="text-body-secondary small" id="gnRunningNote">
+          Fetching surrounding genes from NCBI can take a little while.
+        </div>
+      </div>
+    </div>
+    <div class="alert alert-danger d-none" id="gnErrorPanel" role="alert"></div>
+    <div class="alert alert-warning d-none" id="gnNotFound" role="alert">
+      No job with this ID was found. It may have expired (results are kept for 30 days).
+    </div>
+  </div>
+</div>
+
+<!-- Viewer (revealed when the job completes) -->
+<div id="gnViewer" class="d-none">
+  <div class="row mt-1">
+    <div class="col-12 px-4 px-lg-5">
+      <div class="d-flex flex-wrap align-items-center gap-2 pv-toolbar">
+
+        <div class="btn-group" role="group" aria-label="Zoom">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="gnZoomOut" title="Zoom out"><i class="bi bi-zoom-out"></i></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="gnZoomReset"><span id="gnZoomLabel">100%</span></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="gnZoomIn" title="Zoom in"><i class="bi bi-zoom-in"></i></button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 ms-1">
+          <label for="gnWindow" class="small mb-0 text-nowrap">Flanking ± <span id="gnWindowVal">10</span> kb</label>
+          <input type="range" class="form-range" id="gnWindow" min="1" max="50" value="10" style="width: 120px;">
+        </div>
+
+        <div class="form-check form-switch ms-1 mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="gnAutoFlip" checked>
+          <label class="form-check-label small" for="gnAutoFlip" title="Orient every locus so the anchor gene points the same way">Align strand</label>
+        </div>
+
+        <select class="form-select form-select-sm w-auto ms-1" id="gnSort" title="Order loci">
+          <option value="score">Sort: score</option>
+          <option value="name">Sort: name</option>
+          <option value="size">Sort: gene count</option>
+        </select>
+
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-1" id="gnReset"
+                title="Reset alignment, order and zoom to the original layout">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+        </button>
+
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <span class="text-body-secondary small" id="gnInfo">No data loaded</span>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-main dropdown-toggle" type="button" id="gnExportBtn"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-download me-1"></i>Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="gnExportBtn">
+              <li><a class="dropdown-item" href="#" data-gnexport="svg">SVG (vector)</a></li>
+              <li><a class="dropdown-item" href="#" data-gnexport="png">PNG (raster, ×3)</a></li>
+              <li><a class="dropdown-item" href="#" data-gnexport="pdf">PDF (print / vector)</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-3">
+    <div class="col-12 px-4 px-lg-5">
+      <div class="pv-workspace">
+
+        <div class="pv-canvas-wrap gn-canvas-wrap" id="gnCanvasWrap">
+          <div class="pv-empty-state" id="gnEmptyState">
+            <i class="bi bi-diagram-3"></i>
+            <p class="mb-1 mt-3">No neighborhood to show.</p>
+          </div>
+          <div class="gn-tooltip d-none" id="gnTooltip"></div>
+          <!-- SVG diagram injected here by results_neighborhood.js -->
+        </div>
+
+        <div class="pv-inspector" id="gnInspector">
+          <ul class="nav nav-tabs nav-fill pv-inspector-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="gnTabLoci-btn" data-bs-toggle="tab" data-bs-target="#gnTabLoci" type="button" role="tab">Loci</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="gnTabFamilies-btn" data-bs-toggle="tab" data-bs-target="#gnTabFamilies" type="button" role="tab">Families</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="gnTabStyle-btn" data-bs-toggle="tab" data-bs-target="#gnTabStyle" type="button" role="tab">Style</button>
+            </li>
+          </ul>
+
+          <div class="tab-content pv-inspector-body">
+            <div class="tab-pane fade show active" id="gnTabLoci" role="tabpanel">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small text-body-secondary" id="gnLociCount">0 loci</span>
+                <span class="small text-body-secondary">drag to reorder</span>
+              </div>
+              <ul class="list-group list-group-flush pv-feature-list" id="gnLociList"></ul>
+            </div>
+
+            <div class="tab-pane fade" id="gnTabFamilies" role="tabpanel">
+              <p class="small text-body-secondary mb-2">
+                Homologous genes sharing a colour. Click a swatch to recolour, or rename the family.
+              </p>
+              <ul class="list-group list-group-flush pv-feature-list" id="gnFamilyList"></ul>
+            </div>
+
+            <div class="tab-pane fade" id="gnTabStyle" role="tabpanel">
+              <div id="gnStyleForm"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Results table -->
+  <div class="row mt-4">
+    <div class="col-12 px-4 px-lg-5">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <h6 class="fs-6 mb-0 page-title-smaller">Genes &amp; annotations</h6>
+        <input type="search" class="form-control form-control-sm w-auto" id="gnTableFilter"
+               placeholder="Filter genes…">
+      </div>
+      <div class="border rounded" style="max-height: 460px; overflow: auto;">
+        <table class="table table-sm table-hover align-middle mb-0 small">
+          <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+            <tr>
+              <th>Locus</th><th>Gene</th><th>Family</th><th>Strand</th>
+              <th>Location</th><th>Identity</th><th>Annotation</th><th>NCBI</th>
+            </tr>
+          </thead>
+          <tbody id="gnTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row section-spacing-small"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', path='js/vizcommon.js') }}?v={{ static_version }}"></script>
+  <script src="{{ url_for('static', path='js/results_neighborhood.js') }}?v={{ static_version }}"></script>
+{% endblock %}

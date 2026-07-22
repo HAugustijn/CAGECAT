@@ -44,8 +44,6 @@ cp .env.example .env
 |-------------------|---------|---------------------------------------------------------|
 | `HTTP_PORT`       | `1340`  | Public port for the web interface (served via nginx).   |
 | `WEB_PORT`        | `8004`  | Localhost-only port for direct access to the FastAPI app. |
-| `CBLASTER_EMAIL`  | —       | NCBI contact e-mail; **required** for remote cblaster searches. |
-| `CBLASTER_API_KEY`| —       | Optional NCBI API key (raises the request rate limit).  |
 
 > **Note:** `.env` is git-ignored. Keep any secrets (passwords, API keys, SMTP
 > credentials) there. Remote cblaster searches will not start unless
@@ -88,6 +86,34 @@ The HTTP API mirrors this: `POST /api/jobs/cblaster` to submit,
 `POST /api/jobs/{id}/actions/{action}` to run a downstream analysis. Adding a new
 tool means subclassing `Tool` in
 [`analysis/tools/`](cagecat_web/cagecat_web/analysis/tools) and registering it.
+
+### Search modes
+
+- **Remote** (NCBI BLAST) — searches `nr`/RefSeq/Swissprot with a sequence or
+  NCBI-accession query. Note: cblaster 1.4.0's remote result parsing is currently
+  broken against NCBI (both `nr` and ClusteredNR); this is an upstream bug.
+- **HMM** — searches a **local database** with Pfam profiles (no query file).
+  This is fully local and works today. It requires two one-time setups:
+
+  1. **Pfam profiles** in `./data/pfam` (the container blocks FTP, so fetch via
+     HTTPS):
+     ```bash
+     mkdir -p data/pfam
+     base=https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release
+     curl -o data/pfam/Pfam-A.hmm.gz     "$base/Pfam-A.hmm.gz"
+     curl -o data/pfam/Pfam-A.hmm.dat.gz "$base/Pfam-A.hmm.dat.gz"
+     ```
+  2. **A search database** in `./data/databases`, built from genome files with
+     `cblaster makedb` (produces `<name>.fasta` + `.sqlite3`, which the app then
+     lists automatically in the HMM "database" dropdown):
+     ```bash
+     docker compose exec celery_worker \
+       cblaster makedb /data/databases/genome1.gbff /data/databases/genome2.gbff \
+       -n mydb
+     ```
+
+  All job results and databases live under `./data` (bind-mounted), so they are
+  visible on the host and persist across restarts.
 
 ---
 
