@@ -20,10 +20,10 @@ os.environ.setdefault("CELERY_TASK_ALWAYS_EAGER", "true")
 os.environ.setdefault("CELERY_BROKER_URL", "memory://")
 os.environ.setdefault("CELERY_RESULT_BACKEND", "cache+memory://")
 
-# A fake installed HMM database ("testdb.fasta" + "testdb.sqlite3").
 with open(os.path.join(_TMP_DB, "testdb.fasta"), "w") as _f:
     _f.write(">x\nMKT\n")
 open(os.path.join(_TMP_DB, "testdb.sqlite3"), "w").close()
+open(os.path.join(_TMP_DB, "testdb.dmnd"), "w").close()
 
 import pytest
 from Bio.Seq import Seq

@@ -41,8 +41,9 @@ DATABASES = {
 MODES = {"local", "remote", "hmm", "combi_local", "combi_remote"}
 
 #: Modes CAGECAT currently supports end-to-end. ``remote`` searches NCBI with a
-#: sequence/id query; ``hmm`` searches a local database with Pfam profiles.
-SUPPORTED_MODES = {"remote", "hmm"}
+#: sequence/id query; ``local`` searches a local DIAMOND database; ``hmm``
+#: searches a local database with Pfam profiles.
+SUPPORTED_MODES = {"remote", "local", "hmm"}
 
 #: Binary-table key/attribute choices accepted by cblaster.
 BINARY_KEYS = {"len", "max", "sum"}
@@ -100,6 +101,101 @@ def parse_clusters(session: dict[str, Any]) -> list[dict[str, Any]]:
                 )
     clusters.sort(key=lambda c: (c["number"] is None, c["number"]))
     return clusters
+
+
+def _strand_to_int(value: Any) -> int:
+    """Normalise a cblaster strand (``+``/``-``/``1``/``-1``) to ``1``/``-1``/``0``."""
+    if value in ("+", 1, "1"):
+        return 1
+    if value in ("-", -1, "-1"):
+        return -1
+    return 0
+
+
+def _gene_from_subject(subject: dict[str, Any]) -> dict[str, Any]:
+    """Convert one cblaster subject into a neighborhood-diagram gene.
+
+    A subject's ``hits`` link it to one or more query sequences; the best hit
+    (highest identity) defines the gene's *family* and identity, which the viewer
+    uses to colour homologous genes consistently across loci. Subjects without
+    hits are flanking ("intermediate") genes with no family.
+    """
+    hits = subject.get("hits") or []
+    family: str | None = None
+    identity: float | None = None
+    if hits:
+        best = max(hits, key=lambda h: float(h.get("identity", 0) or 0))
+        family = best.get("query")
+        try:
+            identity = round(float(best.get("identity")), 1)
+        except (TypeError, ValueError):
+            identity = None
+    name = subject.get("name") or subject.get("id") or "gene"
+    return {
+        "name": name,
+        "start": subject.get("start"),
+        "end": subject.get("end"),
+        "strand": _strand_to_int(subject.get("strand")),
+        "family": family,
+        "identity": identity,
+        "anchor": bool(hits),
+        # cblaster subject names are the NCBI protein accession, used for the
+        # out-link. cblaster stores no product text, so annotation is the family.
+        "protein_id": name,
+        "product": None,
+    }
+
+
+def parse_cluster_neighborhoods(session: dict[str, Any]) -> dict[str, Any]:
+    """Return per-cluster gene neighborhoods for EFI-GNT-style visualisation.
+
+    Unlike :func:`parse_clusters` (which returns cluster-level metadata only),
+    this walks each cluster's ``indices`` into its scaffold's ``subjects`` list
+    and returns every gene in the cluster window — the query hits (anchors) plus
+    any flanking/intermediate genes cblaster stored. The ``queries`` list is the
+    set of query families used to colour homologous genes across loci.
+
+    Flanking genes are only present when the search was run with
+    ``--intermediate_genes``; otherwise each cluster contains just its hits.
+    """
+    queries = list(session.get("queries") or [])
+    loci: list[dict[str, Any]] = []
+    for organism in session.get("organisms", []):
+        org_name = organism.get("name") or organism.get("strain") or "Unknown organism"
+        strain = organism.get("strain")
+        for scaffold in organism.get("scaffolds", []):
+            accession = scaffold.get("accession", "")
+            subjects = scaffold.get("subjects", [])
+            for cluster in scaffold.get("clusters", []):
+                indices = cluster.get("indices", []) or []
+                genes: list[dict[str, Any]] = []
+                for idx in indices:
+                    if isinstance(idx, int) and 0 <= idx < len(subjects):
+                        gene = _gene_from_subject(subjects[idx])
+                        if gene["start"] is not None and gene["end"] is not None:
+                            genes.append(gene)
+                # cblaster stores the surrounding ("intermediate") genes in a
+                # separate list (Subject dicts with no hits), not in ``indices``.
+                # They are the grey neighborhood genes shown around the hits.
+                for sub in cluster.get("intermediate_genes", []) or []:
+                    gene = _gene_from_subject(sub)
+                    if gene["start"] is not None and gene["end"] is not None:
+                        genes.append(gene)
+                genes.sort(key=lambda g: g["start"])
+                loci.append(
+                    {
+                        "number": cluster.get("number"),
+                        "organism": org_name,
+                        "strain": strain,
+                        "scaffold": accession,
+                        "score": round(float(cluster.get("score", 0) or 0), 2),
+                        "start": cluster.get("start"),
+                        "end": cluster.get("end"),
+                        "genes": genes,
+                    }
+                )
+    loci.sort(key=lambda c: c["score"], reverse=True)
+    return {"queries": queries, "loci": loci}
 
 
 def coerce_number(
@@ -180,19 +276,24 @@ def clean_search_params(raw: dict[str, Any]) -> dict[str, Any]:
                 f"{', '.join(sorted(available))}."
             )
         cleaned["hmm_database"] = db_key
-    else:  # remote
-        database = str(raw.get("database", "nr")).lower()
-        if database not in DATABASES:
+    else:  # sequence-query search: remote NCBI, or a local DIAMOND database
+        database = str(raw.get("database", "clusterednr")).strip()
+        local_dbs = get_settings().local_databases()
+        if database in local_dbs:
+            cleaned["mode"] = "local"
+            cleaned["local_database"] = database
+        elif database.lower() in DATABASES:
+            cleaned["mode"] = "remote"
+            cleaned["database"] = database.lower()
+            entrez_query = str(raw.get("entrez_query", "")).strip()
+            if entrez_query:
+                cleaned["entrez_query"] = entrez_query
+        else:
             raise ParameterError(f"Unknown database '{database}'.")
-        cleaned["database"] = database
 
         query_ids = _split_multi(raw.get("query_ids"))
         if query_ids:
             cleaned["query_ids"] = query_ids
-
-        entrez_query = str(raw.get("entrez_query", "")).strip()
-        if entrez_query:
-            cleaned["entrez_query"] = entrez_query
 
     for key, (_flag, low, high, is_float) in _NUMERIC_PARAMS.items():
         if str(raw.get(key, "")).strip() != "":
@@ -237,9 +338,16 @@ def _clustering_extras(params: dict[str, Any]) -> list[str]:
     args: list[str] = []
     if params.get("require"):
         args += ["--require", *params["require"]]
-    if params.get("sort_clusters"):
-        args.append("--sort_clusters")
     return args
+
+
+def _plot_cap_args() -> list[str]:
+    """Sort clusters by score and cap how many are drawn, so plots stay
+    renderable even when a search returns thousands of clusters.
+    """
+    from cagecat_web.config import get_settings
+
+    return ["--sort_clusters", "--max_plot_clusters", str(get_settings().max_plot_clusters)]
 
 
 def build_search_args(
@@ -272,8 +380,14 @@ def build_search_args(
         args += ["--query_profiles", *params["query_profiles"]]
         args += ["--database_pfam", str(settings.pfam_dir)]
         args += ["--database", str(settings.hmm_databases()[params["hmm_database"]])]
-    else:  # remote
-        args += ["--database", DATABASES[params.get("database", "nr")]]
+    else:  # remote or local sequence search
+        if mode == "local":
+            from cagecat_web.config import get_settings
+
+            db_path = get_settings().local_databases()[params["local_database"]]
+            args += ["--database", str(db_path)]
+        else:
+            args += ["--database", DATABASES[params.get("database", "clusterednr")]]
         if query_file is not None:
             args += ["--query_file", str(query_file)]
         elif params.get("query_ids"):
@@ -286,6 +400,7 @@ def build_search_args(
 
     args += _numeric_args(params, _CLUSTERING_KEYS)
     args += _clustering_extras(params)
+    args += _plot_cap_args()
 
     if "binary_key" in params:
         args += ["--binary_key", params["binary_key"]]
@@ -324,6 +439,7 @@ def build_recompute_args(
     args += _numeric_args(params, _FILTERING_KEYS)
     args += _numeric_args(params, _CLUSTERING_KEYS)
     args += _clustering_extras(params)
+    args += _plot_cap_args()
     if params.get("intermediate_genes"):
         args.append("--intermediate_genes")
         if "max_distance" in params:

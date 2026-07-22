@@ -68,10 +68,10 @@ class CblasterRecomputeTool(_DerivedCblasterTool):
 
 
 class CblasterGneTool(_DerivedCblasterTool):
-    """Gene neighbourhood estimation over a range of gap values."""
+    """Gene neighborhood estimation over a range of gap values."""
 
     name = "cblaster_gne"
-    label = "Gene neighbourhood"
+    label = "Gene neighborhood"
     description = "Estimate a suitable maximum intergenic gap by resampling."
 
     def clean_params(self, raw: dict[str, Any]) -> dict[str, Any]:
@@ -154,17 +154,19 @@ class CblasterExtractClustersTool(_DerivedCblasterTool):
 
     name = "cblaster_extract_clusters"
     label = "Extract clusters"
-    description = "Export selected clusters as GenBank (or BiG-SCAPE) files."
+    description = "Export selected clusters as GenBank files."
 
     def clean_params(self, raw: dict[str, Any]) -> dict[str, Any]:
-        cleaned: dict[str, Any] = {
-            "maximum_clusters": cbi.coerce_number(
-                "maximum_clusters", raw.get("maximum_clusters", 50), 1, 100_000, False
-            ),
-        }
+        from cagecat_web.config import get_settings
+
+        cap = get_settings().extract_cluster_cap()
+        requested = cbi.coerce_number(
+            "maximum_clusters", raw.get("maximum_clusters", cap), 1, 1_000_000, False
+        )
+        cleaned: dict[str, Any] = {"maximum_clusters": min(int(requested), cap)}
         fmt = str(raw.get("format", "genbank")).lower()
-        if fmt not in {"genbank", "bigscape"}:
-            raise ParameterError("'format' must be 'genbank' or 'bigscape'.")
+        if fmt not in {"genbank", "fasta"}:
+            raise ParameterError("'format' must be 'genbank' or 'fasta'.")
         cleaned["format"] = fmt
         clusters = cbi._split_multi(raw.get("clusters"))
         if clusters:

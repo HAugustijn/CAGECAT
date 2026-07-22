@@ -42,6 +42,58 @@ class Settings(BaseSettings):
     #: Maximum number of individual sequences accepted in a query file.
     max_sequences: int = 10
 
+    #: NCBI API key (raises the request rate limit from 3 to 10 req/s). Set via
+    #: the ``CBLASTER_API_KEY`` environment variable / ``.env``.
+    cblaster_api_key: str | None = None
+    #: Contact email sent to NCBI Entrez (required by NCBI for E-utilities). Used
+    #: by the geneNeighborhood viewer to fetch flanking genes. Set via the
+    #: ``CBLASTER_EMAIL`` environment variable / ``.env``.
+    cblaster_email: str | None = None
+
+    # --- Gene neighborhood enrichment ------------------------------------
+    #: Maximum loci enriched with NCBI-fetched neighbouring genes per request
+    #: (bounds how many Entrez calls a single viewer load makes).
+    max_neighborhood_fetch: int = 20
+    #: Default flank, in bp, fetched on each side of a cluster when enriching.
+    neighborhood_flank_bp: int = 5000
+    #: Hard upper bound on the requested flank, in bp.
+    max_neighborhood_flank_bp: int = 50_000
+
+    # --- Result limits -----------------------------------------------------
+    #: Maximum clusters cblaster draws in the plot (top N by score). Keeps the
+    #: plot renderable for searches that return thousands of clusters.
+    max_plot_clusters: int = 50
+    #: Maximum clusters shown in the results selection table (top N by score).
+    max_display_clusters: int = 500
+    #: Maximum clusters extracted/downloaded at once. Extracting clusters from a
+    #: remote session fetches each sequence from NCBI, so a high number hits
+    #: NCBI's rate limit (HTTP 429). Higher limits apply when an API key is set.
+    max_extract_clusters: int = 50
+    max_extract_clusters_with_key: int = 150
+    #: Maximum clusters forwarded to clinker (a readable comparison figure).
+    max_clinker_clusters: int = 25
+    max_clinker_clusters_with_key: int = 50
+
+    def has_ncbi_api_key(self) -> bool:
+        """Whether an NCBI API key is configured (raises rate limits)."""
+        return bool((self.cblaster_api_key or "").strip())
+
+    def extract_cluster_cap(self) -> int:
+        """Effective cap for extracting/downloading clusters."""
+        return (
+            self.max_extract_clusters_with_key
+            if self.has_ncbi_api_key()
+            else self.max_extract_clusters
+        )
+
+    def clinker_cluster_cap(self) -> int:
+        """Effective cap for forwarding clusters to clinker."""
+        return (
+            self.max_clinker_clusters_with_key
+            if self.has_ncbi_api_key()
+            else self.max_clinker_clusters
+        )
+
     # --- HMM / local databases --------------------------------------------
     #: Directory holding the Pfam profile database (Pfam-A.hmm.gz + .dat.gz),
     #: used by cblaster HMM searches. Downloaded once.
@@ -67,7 +119,7 @@ class Settings(BaseSettings):
         return self.celery_result_backend or self.redis_url
 
     def hmm_databases(self) -> dict[str, Path]:
-        """Return available HMM/local databases as ``name -> FASTA path``.
+        """Return databases usable for HMM search as ``name -> FASTA path``.
 
         A database is a ``<name>.fasta`` with a companion ``<name>.sqlite3`` in
         :attr:`databases_dir` (both produced by ``cblaster makedb``).
@@ -77,6 +129,19 @@ class Settings(BaseSettings):
             for fasta in sorted(self.databases_dir.glob("*.fasta")):
                 if fasta.with_suffix(".sqlite3").is_file():
                     result[fasta.stem] = fasta
+        return result
+
+    def local_databases(self) -> dict[str, Path]:
+        """Return databases usable for local search as ``name -> DIAMOND path``.
+
+        A database is a ``<name>.dmnd`` with a companion ``<name>.sqlite3`` in
+        :attr:`databases_dir` (both produced by ``cblaster makedb``).
+        """
+        result: dict[str, Path] = {}
+        if self.databases_dir.is_dir():
+            for dmnd in sorted(self.databases_dir.glob("*.dmnd")):
+                if dmnd.with_suffix(".sqlite3").is_file():
+                    result[dmnd.stem] = dmnd
         return result
 
     def ensure_directories(self) -> None:

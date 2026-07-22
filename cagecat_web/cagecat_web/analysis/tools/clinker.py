@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from cagecat_web.analysis.tools.base import ParameterError, Tool
+from cagecat_web.analysis.tools.base import GENBANK_TOKEN, ParameterError, Tool
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -119,14 +119,15 @@ class ClinkerTool(Tool):
 
 
 class ClinkerClustersTool(Tool):
-    """cblaster→clinker handoff: align the GenBank clusters of an
-    extract-clusters job with clinker."""
+    """Align GenBank clusters with clinker. Runs on the GenBank output of an
+    extract-clusters job or a geneNeighborhood job (the fetched region GenBanks)."""
 
     name = "clinker_clusters"
     label = "Align with clinker"
-    description = "Align and visualise the extracted clusters with clinker."
+    description = "Align and visualise the clusters with clinker to compute similarity."
     is_derived = True
-    parent_tools = ("cblaster_extract_clusters",)
+    parent_tools = ("cblaster_extract_clusters", "cblaster_neighborhood",
+                    "neighborhood_search")
     parent_input = "genbank"
 
     def clean_params(self, raw: dict[str, Any]) -> dict[str, Any]:
@@ -138,3 +139,56 @@ class ClinkerClustersTool(Tool):
         if not input_paths:
             raise ParameterError("No GenBank clusters were found to visualise.")
         return build_clinker_command(input_paths, output_dir, params)
+
+
+class CblasterClinkerTool(Tool):
+    """One-step cblaster→clinker: extract the selected clusters from a search
+    session, then align them with clinker — a single job with a new id."""
+
+    name = "cblaster_clinker"
+    label = "Visualise with clinker"
+    description = "Extract the selected clusters and align them with clinker."
+    is_derived = True
+    parent_tools = ("cblaster", "cblaster_recompute")
+    parent_input = "session"
+
+    def clean_params(self, raw: dict[str, Any]) -> dict[str, Any]:
+        from cagecat_web.analysis import input_processor_cblaster as cbi
+        from cagecat_web.config import get_settings
+
+        cap = get_settings().clinker_cluster_cap()
+        cleaned = clean_clinker_params(raw)
+        clusters = cbi._split_multi(raw.get("clusters"))
+        if clusters:
+            cleaned["clusters"] = clusters
+        requested = str(raw.get("maximum_clusters", "")).strip()
+        n = (
+            cbi.coerce_number("maximum_clusters", requested, 1, 1_000_000, False)
+            if requested
+            else cap
+        )
+        # Cap so the figure stays readable and remote extraction doesn't hit
+        # NCBI's rate limit; extracts the highest-scoring clusters.
+        cleaned["maximum_clusters"] = min(int(n), cap)
+        return cleaned
+
+    def build_command(
+        self, *, input_paths: list[Path], output_dir: Path, params: dict[str, Any]
+    ) -> list[list[str]]:
+        session = input_paths[0]
+        extract = [
+            "cblaster",
+            "extract_clusters",
+            str(session),
+            "--output",
+            str(output_dir),
+            "--format",
+            "genbank",
+            "--maximum_clusters",
+            str(params.get("maximum_clusters", 50)),
+        ]
+        if params.get("clusters"):
+            extract += ["--clusters", *params["clusters"]]
+        # Second step: clinker on whatever GenBank clusters step one produced.
+        clinker = build_clinker_command([GENBANK_TOKEN], output_dir, params)
+        return [extract, clinker]

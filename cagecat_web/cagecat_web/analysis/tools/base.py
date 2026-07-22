@@ -13,6 +13,9 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+GENBANK_TOKEN = "@GENBANK@"
+
+
 class ToolError(Exception):
     """Base class for tool-related errors."""
 

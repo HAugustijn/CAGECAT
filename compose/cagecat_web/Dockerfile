@@ -27,6 +27,12 @@ RUN pip install \
 COPY ./compose/cagecat_web/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Runtime patch for cblaster's fragile NCBI IPG fetching (see sitecustomize.py).
+# On PYTHONPATH so it is auto-imported by the cblaster subprocess; it self-gates
+# to only affect cblaster.
+COPY ./compose/cagecat_web/patches/ /opt/cblaster-patches/
+ENV PYTHONPATH=/opt/cblaster-patches
+
 # Copy the application and install the package itself (dependencies already met).
 COPY ./cagecat_web/ .
 RUN pip install --no-deps .

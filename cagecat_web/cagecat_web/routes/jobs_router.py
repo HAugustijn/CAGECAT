@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import io
+import zipfile
 from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
 from cagecat_web.analysis import general_manager as gm
@@ -29,6 +31,8 @@ class JobSummary(BaseModel):
     parent_id: str | None = None
     error: str | None = None
     actions: list[dict[str, str]] = []
+    params: dict[str, Any] = {}
+    input_files: list[str] = []
     created_at: str
     updated_at: str
 
@@ -47,6 +51,8 @@ class JobSummary(BaseModel):
             parent_id=job.parent_id,
             error=job.error,
             actions=gm.available_actions(job),
+            params=job.params,
+            input_files=job.input_files,
             created_at=job.created_at.isoformat(),
             updated_at=job.updated_at.isoformat(),
         )
@@ -163,11 +169,18 @@ async def get_job_results(job_id: str) -> dict[str, Any]:
 
 @jobs_router.get("/jobs/{job_id}/clusters")
 async def get_job_clusters(job_id: str) -> dict[str, Any]:
-    """Return the selectable clusters from a cblaster search's session."""
+    """Return the selectable clusters from a cblaster search's session.
+    """
+    from cagecat_web.config import get_settings
+
     try:
-        return {"clusters": gm.get_job_clusters(job_id)}
+        clusters = gm.get_job_clusters(job_id)
     except JobNotFoundError as exc:
         raise _not_found(job_id) from exc
+    total = len(clusters)
+    limit = get_settings().max_display_clusters
+    shown = sorted(clusters, key=lambda c: c.get("score", 0), reverse=True)[:limit]
+    return {"clusters": shown, "total": total, "shown": len(shown), "capped": total > limit}
 
 
 @jobs_router.get("/jobs/{job_id}/view/{filename:path}")
@@ -182,6 +195,33 @@ async def download_result(job_id: str, filename: str) -> FileResponse:
     """Download a single result file produced by a job."""
     path = _result_path(job_id, filename)
     return FileResponse(path, filename=path.name)
+
+
+@jobs_router.get("/jobs/{job_id}/archive")
+async def download_archive(job_id: str) -> StreamingResponse:
+    """Stream all of a job's result files as a single ZIP download."""
+    store = JobStore()
+    try:
+        job = store.get(job_id)
+    except JobNotFoundError as exc:
+        raise _not_found(job_id) from exc
+    files = store.result_files(job_id)
+    if not files:
+        raise _not_found(f"{job_id}/archive")
+
+    output_dir = store.output_dir(job_id)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for path in files:
+            archive.write(path, arcname=str(path.relative_to(output_dir)))
+    buffer.seek(0)
+
+    name = f"cagecat_{job.tool}_{job_id[:8]}.zip"
+    return StreamingResponse(
+        buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )
 
 
 @jobs_router.get("/jobs/{job_id}/logs/{name}")

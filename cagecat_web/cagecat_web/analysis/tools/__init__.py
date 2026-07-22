@@ -19,7 +19,15 @@ from cagecat_web.analysis.tools.cblaster_actions import (
     CblasterGneTool,
     CblasterRecomputeTool,
 )
-from cagecat_web.analysis.tools.clinker import ClinkerClustersTool, ClinkerTool
+from cagecat_web.analysis.tools.clinker import (
+    CblasterClinkerTool,
+    ClinkerClustersTool,
+    ClinkerTool,
+)
+from cagecat_web.analysis.tools.neighborhood import (
+    CblasterNeighborhoodTool,
+    NeighborhoodSearchTool,
+)
 
 _REGISTRY: dict[str, Tool] = {}
 
@@ -59,6 +67,7 @@ def actions_for(tool_name: str) -> list[Tool]:
 # Primary tools (accept uploads).
 register(CblasterTool())
 register(ClinkerTool())
+register(NeighborhoodSearchTool())
 
 # Derived cblaster tools (operate on a search session).
 register(CblasterRecomputeTool())
@@ -66,8 +75,12 @@ register(CblasterGneTool())
 register(CblasterExtractSequencesTool())
 register(CblasterExtractClustersTool())
 
-# cblaster -> clinker handoff (operates on extracted GenBank clusters).
+# cblaster -> clinker handoffs.
 register(ClinkerClustersTool())
+register(CblasterClinkerTool())
+
+# cblaster -> geneNeighborhood handoff.
+register(CblasterNeighborhoodTool())
 
 __all__ = [
     "ParameterError",

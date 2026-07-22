@@ -142,12 +142,20 @@
                   <label for="selectDb" class="col-form-label">Query database</label>
                 </div>
                 <div class="col-6">
-                  <select id="selectDb" class="form-select" aria-label="Default select example">
-                    <option value="nr" selected>nr</option>
-                    <option value="refseq">RefSeq protein</option>
-                    <option value="swissprot">Swissprot</option>
-                    <option value="mibig">MIBiG v4 (local db required)</option>
-                    <option value="asdb">antiSMASH db v4 (local db required)</option>
+                  <select id="selectDb" class="form-select" aria-label="Search database">
+                    <optgroup label="Remote databases (NCBI)">
+                      <option value="clusterednr" selected>ClusteredNR</option>
+                      <option value="nr">nr</option>
+                      <option value="refseq">RefSeq protein</option>
+                      <option value="swissprot">Swissprot</option>
+                    </optgroup>
+                    {% if local_databases %}
+                    <optgroup label="Local databases">
+                      {% for db in local_databases %}
+                      <option value="{{ db }}">{{ db }} (local)</option>
+                      {% endfor %}
+                    </optgroup>
+                    {% endif %}
                   </select>
                 </div>
                 <div class="col-1 d-flex justify-content-start p-0">
@@ -210,7 +218,7 @@
               <div class="row align-items-center">
                 <div class="col-12 mt-5">
                   <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="IntermedGenes" checked>
+                    <input class="form-check-input" type="checkbox" id="IntermedGenes">
                     <label class="form-check-label" for="IntermedGenes">Find intermediate genes</label>
                   </div>
                 </div>
@@ -222,7 +230,7 @@
 
                     {{ ui.form_input('Max distance', 'inputMaxDist', type='number', value='5000',
                     tooltip_text='The maximum distance (bp) between the start/end of a cluster and an intermediate gene.
-                    Setting this to a higher value will allow for a broader analysis of the genome neighbourhood of
+                    Setting this to a higher value will allow for a broader analysis of the genome neighborhood of
                     each cluster') }}
 
                     {{ ui.form_input('Max clusters', 'inputMaxClust', type='number', value='100',
@@ -321,7 +329,7 @@
                 {{ ui.form_input('Max intergenic gap', 'inputMaxIntGap', type='number', value='20000', padding=1, small=true,
                 tooltip_text='Maximum allowed intergenic distance (bp) between conserved hits to be considered
                 in the same cluster block. If you are not sure which value to use, please refer to the
-                Gene Neighbourhood Estimation documentation, as this will help you find a proper value') }}
+                Gene Neighborhood Estimation documentation, as this will help you find a proper value') }}
 
                 {{ ui.form_input('Min percentage', 'inputMinPerc', type='number', value='0', padding=1, small=true,
                 tooltip_text='Minimum percentage of query genes that must be present in clusters hits') }}

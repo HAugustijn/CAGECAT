@@ -199,7 +199,7 @@ function submitCblasterSearch() {
       showAlert(alertBox, "danger", "Please upload a query file or enter NCBI accessions.");
       return;
     }
-    fd.append("database", val("selectDb") || "nr");
+    fd.append("database", val("selectDb") || "clusterednr");
     appendIf(fd, "entrez_query", val("inputSpeciesLabel"));
     appendIf(fd, "hitlist_size", val("inputMaxHits"));
     appendIf(fd, "max_evalue", val("inputMaxEval"));

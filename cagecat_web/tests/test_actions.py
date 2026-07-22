@@ -41,6 +41,98 @@ def test_clinker_handoff_available_on_extract_clusters():
     assert "clinker_clusters" in names
 
 
+def test_cblaster_clinker_available_on_search():
+    assert "cblaster_clinker" in {tool.name for tool in actions_for("cblaster")}
+
+
+def test_cblaster_clinker_caps_maximum_clusters():
+    # A big selection is capped to max_clinker_clusters (default 25).
+    cleaned = get_tool("cblaster_clinker").clean_params(
+        {"clusters": " ".join(str(i) for i in range(1, 501)), "maximum_clusters": "500"}
+    )
+    assert cleaned["maximum_clusters"] == 25
+
+
+def test_extract_clusters_caps_maximum_clusters():
+    # Capped to max_extract_clusters (default 50) to avoid NCBI rate limits.
+    cleaned = get_tool("cblaster_extract_clusters").clean_params(
+        {"maximum_clusters": "500"}
+    )
+    assert cleaned["maximum_clusters"] == 50
+
+
+def test_cluster_caps_boost_with_api_key():
+    from cagecat_web.config import Settings
+
+    with_key = Settings(cblaster_api_key="abc123")
+    assert with_key.extract_cluster_cap() == with_key.max_extract_clusters_with_key
+    assert with_key.clinker_cluster_cap() == with_key.max_clinker_clusters_with_key
+
+    without = Settings(cblaster_api_key="")
+    assert without.extract_cluster_cap() == without.max_extract_clusters
+    assert without.clinker_cluster_cap() == without.max_clinker_clusters
+
+
+def test_cblaster_clinker_builds_two_commands(tmp_path: Path):
+    from cagecat_web.analysis.tools.base import GENBANK_TOKEN
+
+    tool = get_tool("cblaster_clinker")
+    params = tool.clean_params({"clusters": "1 2", "identity": "0.5"})
+    cmds = tool.build_command(
+        input_paths=[tmp_path / "session.json"], output_dir=tmp_path, params=params
+    )
+    assert len(cmds) == 2
+    assert cmds[0][:2] == ["cblaster", "extract_clusters"]
+    assert "--clusters" in cmds[0]
+    assert cmds[1][0] == "clinker"
+    assert GENBANK_TOKEN in cmds[1]
+
+
+def test_task_command_helpers(tmp_path: Path):
+    from cagecat_web.analysis.tasks import _as_command_list, _expand_command
+    from cagecat_web.analysis.tools.base import GENBANK_TOKEN
+
+    assert _as_command_list(["a", "b"]) == [["a", "b"]]
+    assert _as_command_list([["a"], ["b"]]) == [["a"], ["b"]]
+
+    (tmp_path / "c1.gbk").write_text("x")
+    (tmp_path / "c2.gbk").write_text("y")
+    out = _expand_command(["clinker", GENBANK_TOKEN, "-p"], tmp_path)
+    assert out[0] == "clinker" and out[-1] == "-p"
+    assert sum(a.endswith(".gbk") for a in out) == 2
+
+
+def test_cblaster_clinker_runs_two_steps(monkeypatch):
+    import sys
+
+    from cagecat_web.analysis.tools.base import GENBANK_TOKEN
+
+    store = JobStore()
+    parent = _completed_search(store)
+
+    tool = get_tool("cblaster_clinker")
+    write_gbk = "import pathlib; pathlib.Path('cluster1.gbk').write_text('x')"
+    record = (
+        "import sys, pathlib; "
+        "pathlib.Path('done.txt').write_text(' '.join(sys.argv[1:]))"
+    )
+    monkeypatch.setattr(
+        tool,
+        "build_command",
+        lambda *, input_paths, output_dir, params: [
+            [sys.executable, "-c", write_gbk],
+            [sys.executable, "-c", record, GENBANK_TOKEN],
+        ],
+    )
+
+    job = gm.submit_derived_job(
+        parent_id=parent.id, action="cblaster_clinker", params={"clusters": "1"}
+    )
+    assert job.status is JobStatus.COMPLETED
+    done = (store.output_dir(job.id) / "done.txt").read_text()
+    assert "cluster1.gbk" in done  # step 2 saw the file step 1 produced
+
+
 def test_clinker_handoff_requires_a_cluster(store):
     parent = store.create("cblaster_extract_clusters")
     store.update(parent, status=JobStatus.COMPLETED)  # no GenBank produced

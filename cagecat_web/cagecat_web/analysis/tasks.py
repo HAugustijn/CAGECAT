@@ -35,6 +35,9 @@ _TRANSIENT_MARKERS = (
     "503 Server Error",
     "502 Server Error",
     "500 Server Error",
+    "code 429",
+    "429 Client Error",
+    "Too Many Requests",
 )
 
 
@@ -92,8 +95,10 @@ def run_job(self, job_id: str) -> dict[str, Any]:
             shutil.rmtree(stale, ignore_errors=True)
 
     try:
-        command = tool.build_command(
-            input_paths=input_paths, output_dir=output_dir, params=job.params
+        commands = _as_command_list(
+            tool.build_command(
+                input_paths=input_paths, output_dir=output_dir, params=job.params
+            )
         )
     except Exception:
         logger.exception("Job %s: failed to build command", job_id)
@@ -104,63 +109,95 @@ def run_job(self, job_id: str) -> dict[str, Any]:
         )
         return {"job_id": job_id, "status": JobStatus.FAILED.value}
 
-    logger.info("Job %s: running %s", job_id, " ".join(command))
+    stdout_parts: list[str] = []
+    stderr_parts: list[str] = []
 
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=output_dir,
-            capture_output=True,
-            text=True,
-            timeout=settings.job_timeout_seconds,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        store.update(
-            job,
-            status=JobStatus.FAILED,
-            error=f"The analysis exceeded the time limit of "
-            f"{settings.job_timeout_seconds} seconds and was stopped.",
-        )
-        return {"job_id": job_id, "status": JobStatus.FAILED.value}
-    except FileNotFoundError:
-        store.update(
-            job,
-            status=JobStatus.FAILED,
-            error=f"The '{tool.name}' executable is not installed on the server.",
-        )
-        return {"job_id": job_id, "status": JobStatus.FAILED.value}
-
-    (logs_dir / "stdout.log").write_text(completed.stdout or "", encoding="utf-8")
-    (logs_dir / "stderr.log").write_text(completed.stderr or "", encoding="utf-8")
-
-    if completed.returncode != 0:
-        if _is_transient(completed.stderr) and self.request.retries < MAX_RETRIES:
-            attempt = self.request.retries + 1
-            logger.warning(
-                "Job %s: transient error, retry %d/%d", job_id, attempt, MAX_RETRIES
+    for command in commands:
+        command = _expand_command(command, output_dir)
+        logger.info("Job %s: running %s", job_id, " ".join(command))
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=output_dir,
+                capture_output=True,
+                text=True,
+                timeout=settings.job_timeout_seconds,
+                check=False,
             )
+        except subprocess.TimeoutExpired:
+            _write_logs(logs_dir, stdout_parts, stderr_parts)
             store.update(
                 job,
-                status=JobStatus.QUEUED,
-                error=f"A temporary network error occurred; retrying "
-                f"({attempt}/{MAX_RETRIES})…",
+                status=JobStatus.FAILED,
+                error=f"The analysis exceeded the time limit of "
+                f"{settings.job_timeout_seconds} seconds and was stopped.",
             )
-            # Exponential backoff: 60s, 120s, 240s.
-            raise self.retry(countdown=60 * (2**self.request.retries))
-        store.update(
-            job,
-            status=JobStatus.FAILED,
-            error=_short_error(completed.stderr, tool.name),
-        )
-        return {"job_id": job_id, "status": JobStatus.FAILED.value}
+            return {"job_id": job_id, "status": JobStatus.FAILED.value}
+        except FileNotFoundError:
+            store.update(
+                job,
+                status=JobStatus.FAILED,
+                error=f"The '{command[0]}' executable is not installed on the server.",
+            )
+            return {"job_id": job_id, "status": JobStatus.FAILED.value}
 
+        stdout_parts.append(completed.stdout or "")
+        stderr_parts.append(completed.stderr or "")
+
+        if completed.returncode != 0:
+            _write_logs(logs_dir, stdout_parts, stderr_parts)
+            if _is_transient(completed.stderr) and self.request.retries < MAX_RETRIES:
+                attempt = self.request.retries + 1
+                logger.warning(
+                    "Job %s: transient error, retry %d/%d",
+                    job_id, attempt, MAX_RETRIES,
+                )
+                store.update(
+                    job,
+                    status=JobStatus.QUEUED,
+                    error=f"A temporary network error occurred; retrying "
+                    f"({attempt}/{MAX_RETRIES})…",
+                )
+                raise self.retry(countdown=60 * (2**self.request.retries))
+            store.update(
+                job,
+                status=JobStatus.FAILED,
+                error=_short_error(completed.stderr, tool.name),
+            )
+            return {"job_id": job_id, "status": JobStatus.FAILED.value}
+
+    _write_logs(logs_dir, stdout_parts, stderr_parts)
     store.update(job, status=JobStatus.COMPLETED)
     return {
         "job_id": job_id,
         "status": JobStatus.COMPLETED.value,
         "summary": tool.output_summary(output_dir),
     }
+
+
+def _as_command_list(commands: list) -> list[list[str]]:
+    """Normalise ``build_command`` output to a list of argv lists."""
+    if commands and isinstance(commands[0], str):
+        return [commands]
+    return commands
+
+
+def _expand_command(command: list[str], output_dir) -> list[str]:
+    """Expand the GENBANK placeholder to the GenBank files in ``output_dir``."""
+    from cagecat_web.analysis.tools.base import GENBANK_TOKEN
+
+    expanded: list[str] = []
+    for arg in command:
+        if arg == GENBANK_TOKEN:
+            expanded.extend(sorted(str(p) for p in output_dir.glob("*.gbk")))
+        else:
+            expanded.append(arg)
+    return expanded
+
+
+def _write_logs(logs_dir, stdout_parts: list[str], stderr_parts: list[str]) -> None:
+    (logs_dir / "stdout.log").write_text("\n".join(stdout_parts), encoding="utf-8")
+    (logs_dir / "stderr.log").write_text("\n".join(stderr_parts), encoding="utf-8")
 
 
 def _short_error(stderr: str | None, tool_name: str) -> str:

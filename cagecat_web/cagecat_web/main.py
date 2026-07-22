@@ -13,11 +13,14 @@ from fastapi.templating import Jinja2Templates
 from cagecat_web.analysis.tools import ParameterError, UnknownToolError
 from cagecat_web.analysis.validation import ValidationError
 from cagecat_web.cleanup_jobs import main as cleanup_main
-from cagecat_web.config import get_settings
+from cagecat_web.config import PACKAGE_DIR, get_settings
 from cagecat_web.routes.api_router import api_router
 from cagecat_web.routes.jobs_router import jobs_router
 
-templates = Jinja2Templates(directory="cagecat_web/templates")
+TEMPLATES_DIR = str(PACKAGE_DIR / "templates")
+STATIC_DIR = str(PACKAGE_DIR / "static")
+
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
 @asynccontextmanager
@@ -64,7 +67,7 @@ async def _handle_unknown_tool(request: Request, exc: UnknownToolError) -> JSONR
 
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="cagecat_web/static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Include routes
 app.include_router(api_router)

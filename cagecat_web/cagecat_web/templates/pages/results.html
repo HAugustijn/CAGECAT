@@ -3,7 +3,8 @@
 {% block title %}CAGECAT — results{% endblock %}
 
 {% block content %}
-<div id="results-root" data-job-id="{{ job_id }}">
+<div id="results-root" data-job-id="{{ job_id }}"
+     data-max-extract="{{ max_extract_clusters }}" data-max-clinker="{{ max_clinker_clusters }}">
 
   <div class="row">
     <div class="col-12 px-4">
@@ -52,10 +53,27 @@
   <div id="results-panel" class="row d-none">
     <div class="col-12 col-xl-10 px-4">
 
-      <!-- Downloads -->
-      <div class="mb-4">
-        <h6 class="fs-6 mb-2 page-title-smaller">Downloads</h6>
-        <div id="downloads" class="list-group small" style="max-width: 640px;"></div>
+      <!-- What was run -->
+      <div id="run-summary" class="mb-3" style="max-width: 760px;">
+        <p id="run-summary-line" class="mb-1 small"></p>
+        <button id="run-summary-toggle" class="btn btn-link btn-sm p-0" type="button"
+                data-bs-toggle="collapse" data-bs-target="#run-summary-options">Show parameters used</button>
+        <div id="run-summary-options" class="collapse mt-2">
+          <div class="table-responsive">
+            <table class="table table-sm small mb-0"><tbody id="run-summary-table"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Downloads / open plot -->
+      <div class="mb-4 d-flex flex-wrap gap-2 align-items-center">
+        <a id="downloadAll" class="btn btn-outline-secondary btn-sm d-none" href="#">
+          <i class="bi bi-download"></i> Download all results (.zip)
+        </a>
+        <a id="openFullscreen" class="btn btn-outline-secondary btn-sm d-none" target="_blank" rel="noopener" href="#">
+          <i class="bi bi-arrows-fullscreen"></i> Open plot in full screen
+          <i class="bi bi-box-arrow-up-right ms-1"></i>
+        </a>
       </div>
 
       <!-- Downstream analyses -->
@@ -86,11 +104,12 @@
 
           <div class="accordion-item d-none" data-action-card="cblaster_gne">
             <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-gne">Gene neighbourhood estimation</button>
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-gne">Gene neighborhood estimation</button>
             </h2>
             <div id="act-gne" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
               <div class="accordion-body">
-                <form data-action="cblaster_gne">
+                <p class="small text-body-secondary mb-2">Estimate a suitable maximum intergenic gap. The result appears below (no separate page).</p>
+                <form data-action="cblaster_gne" data-inline="true">
                   <div class="row g-2">
                     <div class="col-6"><label class="form-label small">Max gap</label><input name="max_gap" type="number" value="100000" class="form-control form-control-sm"></div>
                     <div class="col-6"><label class="form-label small">Samples</label><input name="samples" type="number" value="100" class="form-control form-control-sm"></div>
@@ -100,25 +119,7 @@
                   </div>
                   <button type="submit" class="btn btn-main btn-sm mt-3">Run GNE</button>
                 </form>
-              </div>
-            </div>
-          </div>
-
-          <div class="accordion-item d-none" data-action-card="cblaster_extract_sequences">
-            <h2 class="accordion-header">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#act-extract-seq">Extract sequences</button>
-            </h2>
-            <div id="act-extract-seq" class="accordion-collapse collapse" data-bs-parent="#actionsAccordion">
-              <div class="accordion-body">
-                <form data-action="cblaster_extract_sequences">
-                  <div class="row g-2">
-                    <div class="col-12"><label class="form-label small">Query IDs (optional, space/comma separated)</label><input name="queries" type="text" class="form-control form-control-sm"></div>
-                    <div class="col-12"><label class="form-label small">Organisms (optional, regex)</label><input name="organisms" type="text" class="form-control form-control-sm"></div>
-                    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="download_sequences" id="dlSeqs"><label class="form-check-label small" for="dlSeqs">Download FASTA sequences from NCBI</label></div>
-                    <div class="col-12 form-check ms-2"><input class="form-check-input" type="checkbox" name="name_only" id="nameOnly"><label class="form-check-label small" for="nameOnly">Names only (no coordinates)</label></div>
-                  </div>
-                  <button type="submit" class="btn btn-main btn-sm mt-3">Extract sequences</button>
-                </form>
+                <div class="inline-result mt-3"></div>
               </div>
             </div>
           </div>
@@ -150,6 +151,7 @@
         <h6 class="fs-6 mb-1 page-title-smaller">Clusters found (<span id="clusters-count">0</span>)</h6>
         <p class="small text-body-secondary mb-2">
           Select clusters, then extract them as GenBank to compare with clinker.
+          <span id="clusters-cap-note" class="d-none text-warning-emphasis"></span>
         </p>
         <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
           <button type="button" id="clustersAll" class="btn btn-outline-secondary btn-sm">Select all</button>
@@ -158,7 +160,11 @@
             <option value="genbank">GenBank</option>
             <option value="bigscape">BiG-SCAPE</option>
           </select>
-          <button type="button" id="extractSelected" class="btn btn-main btn-sm">Extract selected clusters</button>
+          <button type="button" id="extractSelected" class="btn btn-outline-secondary btn-sm">Download selected clusters (ZIP)</button>
+          <button type="button" id="visualiseSelected" class="btn btn-main btn-sm">Visualise selected with clinker</button>
+          <button type="button" id="neighborhoodSelected" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-diagram-3 me-1"></i>View gene neighborhood
+          </button>
           <span id="clustersSelectedCount" class="small text-body-secondary"></span>
         </div>
         <div class="border rounded" style="max-height: 340px; overflow-y: auto;">
